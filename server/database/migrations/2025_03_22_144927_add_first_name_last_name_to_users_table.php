@@ -19,6 +19,7 @@ return new class extends Migration
                 $table->string('name');
                 $table->string('matrice')->unique();
                 $table->timestamp('matrice_verified_at')->nullable();
+                
                 $table->string('password');
                 $table->rememberToken();
                 $table->timestamps();

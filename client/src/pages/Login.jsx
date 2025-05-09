@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import ThemeToggle from '../components/ThemeToggle'
 
 function Login({ login }) {
-  const [matrice, setMatrice] = useState('')
+  const [matricule, setMatricule] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -13,7 +13,7 @@ function Login({ login }) {
     setLoading(true)
 
     try {
-      const result = await login(matrice, password)
+      const result = await login(matricule, password)
       if (!result.success) {
         setError(result.error || 'Login failed. Please check your credentials.')
       }
@@ -55,18 +55,18 @@ function Login({ login }) {
             
             <form className="space-y-6" onSubmit={handleSubmit}>
               <div>
-                <label htmlFor="matrice" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label htmlFor="matricule" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   Matricule
                 </label>
                 <div className="mt-1">
                   <input
-                    id="matrice"
-                    name="matrice"
+                    id="matricule"
+                    name="matricule"
                     type="text"
                     autoComplete="username"
                     required
-                    value={matrice}
-                    onChange={(e) => setMatrice(e.target.value)}
+                    value={matricule}
+                    onChange={(e) => setMatricule(e.target.value)}
                     className="appearance-none block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white sm:text-sm"
                   />
                 </div>

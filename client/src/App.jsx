@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import axios from 'axios'
 import Login from './pages/Login'
-import Dashboard from './pages/Dashboard'
+import Dashboard from './pages/Stagiaire/Dashboard'
 import Profile from './pages/Profile'
 import Settings from './pages/Settings'
 import './App.css'
@@ -40,12 +40,13 @@ function App() {
     fetchUser()
   }, [])
 
-  const login = async (matrice, password) => {
+  const login = async (matricule, password) => {
     try {
       const response = await axios.post('http://localhost:8000/api/login', {
-        matrice,
+        matricule,
         password
       })
+      console.log(response.data);
       
       localStorage.setItem('token', response.data.token)
       setUser(response.data.user)

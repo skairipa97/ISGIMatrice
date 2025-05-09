@@ -4,8 +4,8 @@ import axios from 'axios';
 
 function Profile({ user, onLogout, updateUserProfile }) {
   // Initialize state with user data or empty strings
-  const [firstName, setFirstName] = useState(user?.first_name || '');
-  const [lastName, setLastName] = useState(user?.last_name || '');
+  const [firstName, setFirstName] = useState(user?.prenom || '');
+  const [lastName, setLastName] = useState(user?.nom || '');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -20,8 +20,8 @@ function Profile({ user, onLogout, updateUserProfile }) {
   // Update state when user data changes
   useEffect(() => {
     if (user) {
-      setFirstName(user.first_name || '');
-      setLastName(user.last_name || '');
+      setFirstName(user.prenom || '');
+      setLastName(user.nom || '');
     }
   }, [user]);
 
@@ -85,12 +85,12 @@ function Profile({ user, onLogout, updateUserProfile }) {
       }
       
       const response = await axios.put('http://localhost:8000/api/user/profile', 
-        { first_name: firstName, last_name: lastName },
+        { prenom: prenom, nom: nom },
         { headers: { 'Authorization': `Bearer ${token}` } }
       );
       
       // Update the user data in the parent component with the new first_name and last_name
-      updateUserProfile({ first_name: firstName, last_name: lastName });
+      updateUserProfile({ prenom: prenom, nom: nom });
       
       setMessage({ text: 'Profile updated successfully!', type: 'success' });
     } catch (error) {
@@ -259,11 +259,11 @@ function Profile({ user, onLogout, updateUserProfile }) {
                     <input
                       type="text"
                       id="matrice"
-                      value={user?.matrice || ''}
+                      value={user?.matricule || ''}
                       disabled
                       className="mt-1 block w-full border border-gray-300 dark:border-gray-700 rounded-md shadow-sm py-2 px-3 bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-300 cursor-not-allowed sm:text-sm"
                     />
-                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Matrice cannot be changed</p>
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Matricule cannot be changed</p>
                   </div>
                   
                   <div className="pt-5">

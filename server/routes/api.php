@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\AdminController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -27,4 +28,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // Profile routes
     Route::put('/user/profile', [ProfileController::class, 'updateProfile']);
     Route::put('/user/password', [ProfileController::class, 'updatePassword']);
-}); 
+
+    // Admin routes
+    Route::get('/admin/users/{id}/edit', [AdminController::class, 'edit']);
+    Route::put('/admin/users/{id}', [AdminController::class, 'update']);
+});

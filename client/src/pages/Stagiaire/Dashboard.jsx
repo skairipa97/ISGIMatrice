@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react'
 import axios from 'axios'
-import DashboardLayout from '../layouts/DashboardLayout'
-import { Card, CardHeader, CardContent, CardTitle, CardDescription } from '../components/ui/Card'
-import Avatar from '../components/ui/Avatar'
-import ThemeToggle from '../components/ThemeToggle';
-import Badge from '../components/ui/Badge'
+import DashboardLayout from '../../layouts/DashboardLayout'
+import { Card, CardHeader, CardContent, CardTitle, CardDescription } from '../../components/ui/Card'
+import Avatar from '../../components/ui/Avatar'
+import ThemeToggle from '../../components/ThemeToggle';
+import Badge from '../../components/ui/Badge'
 
 function Dashboard({ user, onLogout }) {
   const [userData, setUserData] = useState(user)
@@ -116,7 +116,7 @@ function Dashboard({ user, onLogout }) {
           <div className="px-6 py-8 md:px-8 md:flex md:items-center md:justify-between">
             <div>
               <h1 className="text-2xl font-bold text-white">
-                Welcome back, {userData?.last_name}&nbsp;{userData?.first_name}
+                Welcome back, {userData?.nom}&nbsp;{userData?.prenom}
 
               </h1>
               <p className="mt-2 text-indigo-100">
@@ -125,7 +125,7 @@ function Dashboard({ user, onLogout }) {
             </div>
             <div className="mt-4 md:mt-0 flex-shrink-0">
             <Avatar 
-              name={`${userData?.last_name} ${userData?.first_name}`}
+              name={`${userData?.nom} ${userData?.prenom}`}
               size="xl" 
               status="online"
             />
@@ -248,12 +248,12 @@ function Dashboard({ user, onLogout }) {
               <div className="flex flex-col sm:flex-row sm:gap-6">
                 <div className="sm:w-1/2">
                   <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Nom Complet</p>
-                  <p className="mt-1 text-base font-semibold text-gray-900 dark:text-white">{userData?.last_name}&nbsp;{userData?.first_name}</p>
+                  <p className="mt-1 text-base font-semibold text-gray-900 dark:text-white">{userData?.nom}&nbsp;{userData?.prenom}</p>
                 </div>
                 <div className="mt-4 sm:mt-0 sm:w-1/2">
                   <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Matricule</p>
                   <div className="mt-1 flex items-center">
-                    <p className="text-base font-semibold text-gray-900 dark:text-white">{userData?.matrice}</p>
+                    <p className="text-base font-semibold text-gray-900 dark:text-white">{userData?.matricule}</p>
                     <Badge variant="primary" className="ml-2">Active</Badge>
                   </div>
                 </div>

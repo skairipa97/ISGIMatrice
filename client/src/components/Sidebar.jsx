@@ -92,13 +92,13 @@ function Sidebar({ user, onLogout, isOpen, onClose }) {
           {/* User Profile */}
           <div className="p-4 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center space-x-3">
-              <Avatar name={`${user?.last_name} ${user?.first_name}`} size="md" status="online" />
+              <Avatar name={`${user?.nom} ${user?.prenom}`} size="md" status="online" />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                  {user?.last_name}&nbsp;{user.first_name}
+                  {user?.nom}&nbsp;{user.prenom}
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                  Matricule: {user?.matrice}
+                  Matricule: {user?.matricule}
                 </p>
               </div>
             </div>

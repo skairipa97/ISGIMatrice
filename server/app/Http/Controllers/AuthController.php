@@ -2,48 +2,73 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
+use App\Models\Admin;
+use App\Models\Formateur;
+use App\Models\Stagiaire;
 
 class AuthController extends Controller
 {
     /**
-     * Handle user login
+     * Handle login for Admin, Formateur, or Stagiaire
      */
     public function login(Request $request)
     {
         $request->validate([
-            'matrice' => 'required|string',
+            'matricule' => 'required|string',
             'password' => 'required|string',
         ]);
 
-        $user = User::where('matrice', $request->matrice)->first();
+        $credentials = ['matricule' => $request->matricule, 'password' => $request->password];
 
-        if (! $user || ! Hash::check($request->password, $user->password)) {
-            throw ValidationException::withMessages([
-                'matrice' => ['The provided credentials are incorrect.'],
+        // Vérifie dans Admin
+        $admin = Admin::where('matricule', $credentials['matricule'])->first();
+        if ($admin && Hash::check($credentials['password'], $admin->mdp)) {
+            $token = $admin->createToken('admin-token')->plainTextToken;
+            return response()->json([
+                'user' => $admin,
+                'role' => 'admin',
+                'token' => $token,
             ]);
         }
 
-        $token = $user->createToken('auth-token')->plainTextToken;
+        // Vérifie dans Formateur
+        $formateur = Formateur::where('matricule', $credentials['matricule'])->first();
+        if ($formateur && Hash::check($credentials['password'], $formateur->mdp)) {
+            $token = $formateur->createToken('formateur-token')->plainTextToken;
+            return response()->json([
+                'user' => $formateur,
+                'role' => 'formateur',
+                'token' => $token,
+            ]);
+        }
 
-        return response()->json([
-            'user' => $user,
-            'token' => $token,
+        // Vérifie dans Stagiaire
+        $stagiaire = Stagiaire::where('matricule', $credentials['matricule'])->first();
+        if ($stagiaire && Hash::check($credentials['password'], $stagiaire->password)) {
+            $token = $stagiaire->createToken('stagiaire-token')->plainTextToken;
+            return response()->json([
+                'user' => $stagiaire,
+                'role' => 'stagiaire',
+                'token' => $token,
+            ]);
+        }
+
+        // Sinon, identifiants invalides
+        throw ValidationException::withMessages([
+            'matricule' => ['Les identifiants sont incorrects.'],
         ]);
     }
 
     /**
-     * Handle user logout
+     * Logout
      */
     public function logout(Request $request)
     {
         $request->user()->currentAccessToken()->delete();
-
-        return response()->json(['message' => 'Logged out successfully']);
+        return response()->json(['message' => 'Déconnexion réussie']);
     }
 
     /**
@@ -51,9 +76,6 @@ class AuthController extends Controller
      */
     public function user(Request $request)
     {
-        $user = $request->user();
-        
-        // Include the automatically generated 'name' attribute
-        return response()->json($user);
+        return response()->json($request->user());
     }
 }
