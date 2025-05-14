@@ -1,11 +1,34 @@
-import { useState, useEffect } from 'react'
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
-import axios from 'axios'
-import Login from './pages/Login'
-import Dashboard from './pages/Stagiaire/Dashboard'
-import Profile from './pages/Profile'
-import Settings from './pages/Settings'
-import './App.css'
+import { useState, useEffect } from 'react';
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from 'react-router-dom';
+import axios from 'axios';
+
+import Login from './pages/Login';
+import Dashboard from './pages/Stagiaire/Dashboard';
+import Profile from './pages/Profile';
+import Settings from './pages/Settings';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import FormateurDashboard from './pages/Formateur/FormateurDashboard';
+import AdminAbsences from './pages/Admin/Absences';
+
+
+import './App.css';
+
+// Fonction utilitaire pour obtenir la route du dashboard selon le rôle
+const getDashboardRoute = (role) => {
+  switch (role) {
+    case 'admin':
+      return '/admin';
+    case 'formateur':
+      return '/formateur/dashboard';
+    default:
+      return '/dashboard';
+  }
+};
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -126,19 +149,6 @@ function App() {
   return (
     <div className="h-screen w-screen overflow-hidden touch-auto">
       <Router>
-        <div className="flex h-screen bg-gray-100">
-        <Sidebar />
-        <div className="flex flex-col flex-1 overflow-hidden">
-          <Navbar />
-          <main className="flex-1 overflow-y-auto p-4">
-            <Routes>
-              <Route path="/" element={<Adashboard />} />
-              <Route path="/absences" element={<Absences />} />
-              <Route path="/stagiaire/:id" element={<StagiaireDetails />} />
-            </Routes>
-          </main>
-        </div>
-        </div>
         <Routes>
           {/* Public Route */}
           <Route
@@ -183,6 +193,16 @@ function App() {
             element={
               <ProtectedRoute
                 element={<AdminDashboard user={user} onLogout={logout} />}
+                allowedRoles={['admin']}
+              />
+            }
+          />
+
+          <Route
+            path="/absences"
+            element={
+              <ProtectedRoute
+                element={<AdminAbsences user={user} onLogout={logout} />}
                 allowedRoles={['admin']}
               />
             }

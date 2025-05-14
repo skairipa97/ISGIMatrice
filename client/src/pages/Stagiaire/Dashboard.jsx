@@ -13,7 +13,7 @@ function Dashboard({ user, onLogout }) {
   const [stats, setStats] = useState({
     totalAbsences: 0,
     justifiedAbsences: 0,
-    unjustifiedAbsences: 0,
+    unjustifiedAbsences: 0,   
     warningLevel: 'normal' // normal, warning, danger
   })
 
