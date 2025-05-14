@@ -10,6 +10,7 @@ function Dashboard({ user, onLogout }) {
   const [userData, setUserData] = useState(user)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [photoPreview, setPhotoPreview] = useState(user?.photo ? `http://localhost:8000${user.photo}` : null);
   const [stats, setStats] = useState({
     totalAbsences: 0,
     justifiedAbsences: 0,
@@ -123,14 +124,30 @@ function Dashboard({ user, onLogout }) {
                 Here's an overview of your attendance information.
               </p>
             </div>
-            <div className="mt-4 md:mt-0 flex-shrink-0">
+        <div className="mt-4 md:mt-0 flex-shrink-0">
+          {photoPreview ? (
+            <div className="h-20 w-20 rounded-full overflow-hidden ring-1 ring-indigo-500 dark:ring-indigo-400">
+              <img 
+                src={photoPreview} 
+                alt="Profile" 
+                className="h-full w-full object-cover"
+                onError={(e) => {
+                  console.error('Photo inaccessible:', photoPreview);
+                  e.target.src = ''; // Force le fallback
+                  setPhotoPreview(null);
+                }}
+              />
+            </div>
+          ) : (
             <Avatar 
               name={`${userData?.nom} ${userData?.prenom}`}
+              src={userData?.photo}
               size="xl" 
               status="online"
+              className="ring-2 ring-indigo-500 dark:ring-indigo-400"
             />
-
-            </div>
+  )}
+</div>
           </div>
         </div>
         

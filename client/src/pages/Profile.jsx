@@ -19,17 +19,18 @@ function Profile({ user, onLogout, updateUserProfile }) {
   const [photoPreview, setPhotoPreview] = useState(user?.photo ? `http://localhost:8000${user.photo}` : null);
   const [photoFile, setPhotoFile] = useState(null);
   const fileInputRef = useRef(null);
+  
 
   // Update state when user data changes
-  useEffect(() => {
-    if (user) {
-      setPrenom(user.prenom || '');
-      setNom(user.nom || '');
-      console.log('User photo URL:', user.photo);
-      setPhotoPreview(user.photo ? `http://localhost:8000${user.photo}` : null);
-    }
-  }, [user]);
-
+useEffect(() => {
+  if (user) {
+    setPrenom(user.prenom || '');
+    setNom(user.nom || '');
+    setPhotoPreview(user.photo ? `http://localhost:8000${user.photo}` : null); // Modification clé ici
+  }
+}, [user]);
+console.log(photoPreview)
+console.log(user);
   const handlePrenomChange = (e) => {
     setPrenom(e.target.value);
   };
@@ -323,8 +324,8 @@ function Profile({ user, onLogout, updateUserProfile }) {
                       alt="Profile" 
                       className="h-full w-full object-cover"
                       onError={(e) => {
-                        console.error('Error loading image:', e);
-                        e.target.src = ''; // Clear the broken image
+                        console.error('Photo inaccessible:', photoPreview);
+                        e.target.src = ''; // Force le fallback
                         setPhotoPreview(null);
                       }}
                     />
