@@ -5,6 +5,9 @@ import Login from './pages/Login'
 import Dashboard from './pages/Stagiaire/Dashboard'
 import Profile from './pages/Profile'
 import Settings from './pages/Settings'
+import Adashboard from './pages/Admin/Adashboard';
+import Absences from './pages/Admin/Absences';
+import StagiaireDetails from './pages/Admin/StagiaireDetails';
 import './App.css'
 
 function App() {
@@ -111,6 +114,19 @@ function App() {
   return (
     <div className="h-screen w-screen overflow-hidden touch-auto">
       <Router>
+        <div className="flex h-screen bg-gray-100">
+        <Sidebar />
+        <div className="flex flex-col flex-1 overflow-hidden">
+          <Navbar />
+          <main className="flex-1 overflow-y-auto p-4">
+            <Routes>
+              <Route path="/" element={<Adashboard />} />
+              <Route path="/absences" element={<Absences />} />
+              <Route path="/stagiaire/:id" element={<StagiaireDetails />} />
+            </Routes>
+          </main>
+        </div>
+        </div>
         <Routes>
           <Route 
             path="/login" 
