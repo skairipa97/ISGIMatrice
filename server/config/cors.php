@@ -5,7 +5,7 @@ return [
 
 'allowed_methods' => ['*'],
 
-'allowed_origins' => [env('CORS_ALLOWED_ORIGINS', 'http://localhost:5173')],
+'allowed_origins' => ['*'],
 
 'allowed_origins_patterns' => [],
 

@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import DashboardLayout from '../layouts/DashboardLayout';
 import axios from 'axios';
 
 function Profile({ user, onLogout, updateUserProfile }) {
   // Initialize state with user data or empty strings
-  const [firstName, setFirstName] = useState(user?.prenom || '');
-  const [lastName, setLastName] = useState(user?.nom || '');
+  const [prenom, setPrenom] = useState(user?.prenom || '');
+  const [nom, setNom] = useState(user?.nom || '');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -16,21 +16,27 @@ function Profile({ user, onLogout, updateUserProfile }) {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [photoPreview, setPhotoPreview] = useState(user?.photo ? `http://localhost:8000${user.photo}` : null);
+  const [photoFile, setPhotoFile] = useState(null);
+  const fileInputRef = useRef(null);
+  
 
   // Update state when user data changes
-  useEffect(() => {
-    if (user) {
-      setFirstName(user.prenom || '');
-      setLastName(user.nom || '');
-    }
-  }, [user]);
-
-  const handleFirstNameChange = (e) => {
-    setFirstName(e.target.value);
+useEffect(() => {
+  if (user) {
+    setPrenom(user.prenom || '');
+    setNom(user.nom || '');
+    setPhotoPreview(user.photo ? `http://localhost:8000${user.photo}` : null); // Modification clé ici
+  }
+}, [user]);
+console.log(photoPreview)
+console.log(user);
+  const handlePrenomChange = (e) => {
+    setPrenom(e.target.value);
   };
 
-  const handleLastNameChange = (e) => {
-    setLastName(e.target.value);
+  const handleNomChange = (e) => {
+    setNom(e.target.value);
   };
 
   const handlePasswordChange = (e, field) => {
@@ -50,27 +56,42 @@ function Profile({ user, onLogout, updateUserProfile }) {
     }
   };
 
-  const togglePasswordVisibility = (field) => {
-    switch (field) {
-      case 'current':
-        setShowCurrentPassword(!showCurrentPassword);
-        break;
-      case 'new':
-        setShowNewPassword(!showNewPassword);
-        break;
-      case 'confirm':
-        setShowConfirmPassword(!showConfirmPassword);
-        break;
-      default:
-        break;
+  const handlePhotoClick = () => {
+    fileInputRef.current.click();
+  };
+
+  const handlePhotoChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setMessage({ text: 'Please select an image file', type: 'error' });
+      return;
     }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setMessage({ text: 'Image must be less than 5MB', type: 'error' });
+      return;
+    }
+
+    setPhotoFile(file);
+    setMessage({ text: '', type: '' });
+
+    // Create preview URL
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPhotoPreview(reader.result);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!firstName.trim() || !lastName.trim()) {
-      setMessage({ text: 'First name and last name are required', type: 'error' });
+    if (!prenom?.trim() || !nom?.trim()) {
+      setMessage({ text: 'Le prénom et le nom sont requis', type: 'error' });
       return;
     }
     
@@ -83,24 +104,109 @@ function Profile({ user, onLogout, updateUserProfile }) {
         onLogout();
         return;
       }
+
+      // Créer les données du formulaire
+      const formData = new FormData();
+      formData.append('prenom', prenom.trim());
+      formData.append('nom', nom.trim());
+      if (photoFile) {
+        formData.append('photo', photoFile);
+      }
       
-      const response = await axios.put('http://localhost:8000/api/user/profile', 
-        { prenom: prenom, nom: nom },
-        { headers: { 'Authorization': `Bearer ${token}` } }
+      // Log the FormData contents
+      console.log('Form data contents:');
+      for (let pair of formData.entries()) {
+        console.log(pair[0] + ': ' + pair[1]);
+      }
+
+      // Essayons d'abord sans la photo pour voir si ça fonctionne
+      const jsonData = {
+        prenom: prenom.trim(),
+        nom: nom.trim()
+      };
+
+      console.log('Sending data:', jsonData);
+
+      const response = await axios.put(
+        'http://localhost:8000/api/user/profile',
+        jsonData,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          }
+        }
       );
       
-      // Update the user data in the parent component with the new first_name and last_name
-      updateUserProfile({ prenom: prenom, nom: nom });
+      console.log('Profile update response:', response.data);
+
+      // Si la mise à jour du profil réussit et qu'il y a une photo, l'envoyer
+      if (photoFile) {
+        const photoData = new FormData();
+        photoData.append('photo', photoFile);
+
+        console.log('Sending photo...');
+        
+        const photoResponse = await axios.post(
+          'http://localhost:8000/api/user/profile/photo',
+          photoData,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Accept': 'application/json'
+            }
+          }
+        );
+
+        console.log('Photo upload response:', photoResponse.data);
+        const photoUrl = `http://localhost:8000${photoResponse.data.photo_url}`;
+        console.log('Full photo URL:', photoUrl);
+        
+        // Mettre à jour l'URL de la photo
+        setPhotoPreview(photoUrl);
+        updateUserProfile({
+          ...user,
+          prenom: prenom.trim(),
+          nom: nom.trim(),
+          photo: photoResponse.data.photo_url
+        });
+      } else {
+        // Mise à jour sans photo
+        updateUserProfile({
+          ...user,
+          prenom: prenom.trim(),
+          nom: nom.trim()
+        });
+      }
       
-      setMessage({ text: 'Profile updated successfully!', type: 'success' });
+      setMessage({ text: 'Profil mis à jour avec succès !', type: 'success' });
+      setPhotoFile(null);
     } catch (error) {
       console.error('Update error:', error);
+      if (error.response?.data) {
+        console.error('Error details:', {
+          data: error.response.data,
+          status: error.response.status,
+          headers: error.response.headers,
+          errors: error.response.data.errors
+        });
+      }
+      
+      const errorMessage = 
+        error.response?.data?.message ||
+        error.response?.data?.errors?.prenom?.[0] ||
+        error.response?.data?.errors?.nom?.[0] ||
+        error.response?.data?.errors?.photo?.[0] ||
+        'Échec de la mise à jour du profil';
+      
+      console.error('Error message:', errorMessage);
+      
       setMessage({ 
-        text: error.response?.data?.message || error.response?.data?.errors?.first_name?.[0] || error.response?.data?.errors?.last_name?.[0] || 'Failed to update profile', 
+        text: errorMessage,
         type: 'error' 
       });
       
-      // If unauthorized, log out
       if (error.response?.status === 401) {
         onLogout();
       }
@@ -114,22 +220,22 @@ function Profile({ user, onLogout, updateUserProfile }) {
 
     // Validate passwords
     if (!currentPassword) {
-      setPasswordMessage({ text: 'Current password is required', type: 'error' });
+      setPasswordMessage({ text: 'Le mot de passe actuel est requis', type: 'error' });
       return;
     }
 
     if (!newPassword) {
-      setPasswordMessage({ text: 'New password is required', type: 'error' });
+      setPasswordMessage({ text: 'Le nouveau mot de passe est requis', type: 'error' });
       return;
     }
 
     if (newPassword.length < 8) {
-      setPasswordMessage({ text: 'Password must be at least 8 characters long', type: 'error' });
+      setPasswordMessage({ text: 'Le mot de passe doit contenir au moins 8 caractères', type: 'error' });
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      setPasswordMessage({ text: 'Passwords do not match', type: 'error' });
+      setPasswordMessage({ text: 'Les mots de passe ne correspondent pas', type: 'error' });
       return;
     }
 
@@ -158,14 +264,14 @@ function Profile({ user, onLogout, updateUserProfile }) {
       setNewPassword('');
       setConfirmPassword('');
 
-      setPasswordMessage({ text: 'Password updated successfully!', type: 'success' });
+      setPasswordMessage({ text: 'Mot de passe mis à jour avec succès !', type: 'success' });
     } catch (error) {
       console.error('Password update error:', error);
       setPasswordMessage({
         text: error.response?.data?.message || 
               error.response?.data?.errors?.current_password?.[0] || 
               error.response?.data?.errors?.password?.[0] || 
-              'Failed to update password',
+              'Échec de la mise à jour du mot de passe',
         type: 'error'
       });
 
@@ -178,8 +284,24 @@ function Profile({ user, onLogout, updateUserProfile }) {
     }
   };
 
+  const togglePasswordVisibility = (field) => {
+    switch (field) {
+      case 'current':
+        setShowCurrentPassword(!showCurrentPassword);
+        break;
+      case 'new':
+        setShowNewPassword(!showNewPassword);
+        break;
+      case 'confirm':
+        setShowConfirmPassword(!showConfirmPassword);
+        break;
+      default:
+        break;
+    }
+  };
+
   // For the avatar, use the first letter of the first name
-  const avatarLetter = firstName ? firstName.charAt(0).toUpperCase() : '?';
+  const avatarLetter = prenom ? prenom.charAt(0).toUpperCase() : '?';
 
   return (
     <DashboardLayout user={user} onLogout={onLogout}>
@@ -195,18 +317,39 @@ function Profile({ user, onLogout, updateUserProfile }) {
           <div className="px-4 py-5 sm:p-6">
             <div className="flex flex-col sm:flex-row">
               <div className="sm:w-1/3 mb-6 sm:mb-0 sm:pr-8">
-                <div className="bg-indigo-100 dark:bg-indigo-900 h-40 w-40 rounded-full flex items-center justify-center text-4xl font-bold text-indigo-700 dark:text-indigo-300 mx-auto">
-                  {avatarLetter}
+                <div className={`bg-indigo-100 dark:bg-indigo-900 h-40 w-40 rounded-full overflow-hidden mx-auto ${isLoading ? 'opacity-50' : ''}`}>
+                  {photoPreview ? (
+                    <img 
+                      src={photoPreview} 
+                      alt="Profile" 
+                      className="h-full w-full object-cover"
+                      onError={(e) => {
+                        console.error('Photo inaccessible:', photoPreview);
+                        e.target.src = ''; // Force le fallback
+                        setPhotoPreview(null);
+                      }}
+                    />
+                  ) : (
+                    <div className="h-full w-full flex items-center justify-center text-4xl font-bold text-indigo-700 dark:text-indigo-300">
+                      {avatarLetter}
+                    </div>
+                  )}
                 </div>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  className="hidden"
+                  accept="image/*"
+                  onChange={handlePhotoChange}
+                />
                 <div className="mt-4 text-center">
                   <button 
                     type="button" 
+                    onClick={handlePhotoClick}
                     className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
-                    disabled={true}
                   >
                     Change Profile Picture
                   </button>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">(Coming soon)</p>
                 </div>
               </div>
               
@@ -227,38 +370,38 @@ function Profile({ user, onLogout, updateUserProfile }) {
                 
                 <form className="space-y-6" onSubmit={handleSubmit}>
                   <div>
-                    <label htmlFor="first_name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      First Name
+                    <label htmlFor="prenom" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Prénom
                     </label>
                     <input
                       type="text"
-                      id="first_name"
-                      value={firstName}
-                      onChange={handleFirstNameChange}
+                      id="prenom"
+                      value={prenom}
+                      onChange={handlePrenomChange}
                       className="mt-1 block w-full border border-gray-300 dark:border-gray-700 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white sm:text-sm"
                     />
                   </div>
 
                   <div>
-                    <label htmlFor="last_name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Last Name
+                    <label htmlFor="nom" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Nom
                     </label>
                     <input
                       type="text"
-                      id="last_name"
-                      value={lastName}
-                      onChange={handleLastNameChange}
+                      id="nom"
+                      value={nom}
+                      onChange={handleNomChange}
                       className="mt-1 block w-full border border-gray-300 dark:border-gray-700 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white sm:text-sm"
                     />
                   </div>
                   
                   <div>
-                    <label htmlFor="matrice" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    <label htmlFor="matricule" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                       Matricule
                     </label>
                     <input
                       type="text"
-                      id="matrice"
+                      id="matricule"
                       value={user?.matricule || ''}
                       disabled
                       className="mt-1 block w-full border border-gray-300 dark:border-gray-700 rounded-md shadow-sm py-2 px-3 bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-300 cursor-not-allowed sm:text-sm"

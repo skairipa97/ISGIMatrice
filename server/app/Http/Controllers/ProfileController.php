@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 
@@ -17,8 +18,8 @@ class ProfileController extends Controller
     public function updateProfile(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'first_name' => 'required|string|max:255',
-            'last_name' => 'required|string|max:255',
+            'prenom' => 'required|string|max:255',
+            'nom' => 'required|string|max:255',
         ]);
 
         if ($validator->fails()) {
@@ -27,15 +28,66 @@ class ProfileController extends Controller
 
         $user = $request->user();
         
-        // Update first_name and last_name directly
-        $user->first_name = $request->first_name;
-        $user->last_name = $request->last_name;
+        // Update prenom and nom
+        $user->prenom = $request->prenom;
+        $user->nom = $request->nom;
         $user->save();
 
         return response()->json([
             'message' => 'Profile updated successfully',
             'user' => $user
         ]);
+    }
+
+    /**
+     * Update user profile photo
+     */
+    public function updatePhoto(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'photo' => 'required|image|mimes:jpeg,png,jpg,gif|max:5120', // max 5MB
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $user = $request->user();
+
+        try {
+            // Delete old photo if exists
+            if ($user->photo && Storage::disk('public')->exists($user->photo)) {
+                Storage::disk('public')->delete($user->photo);
+            }
+
+            // Store the new photo
+            $path = $request->file('photo')->store('profile-photos', 'public');
+            $user->photo = $path;
+            $user->save();
+
+            // Get the full URL
+            $photoUrl = Storage::url($path);
+            
+            // Log the path and URL for debugging
+            \Log::info('Photo path: ' . $path);
+            \Log::info('Photo URL: ' . $photoUrl);
+
+            return response()->json([
+                'message' => 'Photo updated successfully',
+                'photo_url' => $photoUrl,
+                'debug_info' => [
+                    'path' => $path,
+                    'url' => $photoUrl,
+                    'storage_path' => Storage::disk('public')->path($path)
+                ]
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Photo upload error: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Failed to upload photo',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**

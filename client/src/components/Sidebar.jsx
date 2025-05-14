@@ -6,23 +6,16 @@ import Avatar from './ui/Avatar';
 function Sidebar({ user, onLogout, isOpen, onClose }) {
   const location = useLocation();
 
-  // Function to check if a link is active
-  const isActive = (path) => {
-    return location.pathname === path;
-  };
-  
-  const handleCloseClick = () => {
-    onClose();
-  };
-  
+  const isActive = (path) => location.pathname === path;
+
+  const handleCloseClick = () => onClose();
+
   const handleLinkClick = () => {
-    // Only close on mobile
     if (window.innerWidth < 1024) {
       onClose();
     }
   };
-  
-  // Define navigation items based on user role
+
   const getNavigationItems = () => {
     const commonItems = [
       {
@@ -59,8 +52,8 @@ function Sidebar({ user, onLogout, isOpen, onClose }) {
       stagiaire: [],
       formateur: [
         {
-          name: "Groupe",
-          path: "/groupe",
+          name: "Groupes",
+          path: "/groupes",
           icon: (
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -90,7 +83,6 @@ function Sidebar({ user, onLogout, isOpen, onClose }) {
       ]
     };
 
-    // Return navigation items based on user role
     switch(user?.role) {
       case 'formateur':
         return [...commonItems, ...roleSpecificItems.formateur];
@@ -102,15 +94,12 @@ function Sidebar({ user, onLogout, isOpen, onClose }) {
     }
   };
 
-  // Get support items based on user role
   const getSupportItems = () => {
     const commonSupportItems = [];
-
-    // Only stagiaires have justification in support
     if (user?.role === 'stagiaire') {
       commonSupportItems.push({
         name: "Justification",
-        path: "/justification",
+        path: "/stagiaire/absences-justification",
         icon: (
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -118,23 +107,16 @@ function Sidebar({ user, onLogout, isOpen, onClose }) {
         )
       });
     }
-
     return commonSupportItems;
   };
-  
+
   const menuItems = getNavigationItems();
   const supportItems = getSupportItems();
-  
+
   return (
     <>
-      {/* Sidebar */}
-      <div 
-        className={`fixed inset-y-0 left-0 transform ${
-          isOpen ? 'translate-x-0' : '-translate-x-full'
-        } lg:relative lg:translate-x-0 z-50 w-64 bg-white dark:bg-gray-800 shadow-lg transition-transform duration-300 ease-in-out overflow-hidden`}
-      >
+      <div className={`fixed inset-y-0 left-0 transform ${isOpen ? 'translate-x-0' : '-translate-x-full'} lg:relative lg:translate-x-0 z-50 w-64 bg-white dark:bg-gray-800 shadow-lg transition-transform duration-300 ease-in-out overflow-hidden`}>
         <div className="flex flex-col h-full">
-          {/* Sidebar Header */}
           <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center">
               <span className="h-8 w-8 bg-indigo-600 rounded-md flex items-center justify-center">
@@ -146,22 +128,14 @@ function Sidebar({ user, onLogout, isOpen, onClose }) {
             </div>
             <div className="flex items-center space-x-2">
               <ThemeToggle />
-              
-              {/* Close button for mobile */}
-              <button 
-                type="button"
-                onClick={handleCloseClick}
-                className="lg:hidden p-2 rounded-md text-gray-500 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                aria-label="Close sidebar"
-              >
+              <button type="button" onClick={handleCloseClick} className="lg:hidden p-2 rounded-md text-gray-500 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500" aria-label="Close sidebar">
                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
           </div>
-          
-          {/* User Profile */}
+
           <div className="p-4 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center space-x-3">
               <Avatar name={`${user?.nom} ${user?.prenom}`} size="md" status="online" />
@@ -170,59 +144,31 @@ function Sidebar({ user, onLogout, isOpen, onClose }) {
                   {user?.nom}&nbsp;{user?.prenom}
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                  {user?.role && (
-                    <span className="capitalize">{user.role}</span>
-                  )}
-                  {user?.matricule && (
-                    <span> • Matricule: {user?.matricule}</span>
-                  )}
+                  {user?.role && (<span className="capitalize">{user.role}</span>)}
+                  {user?.matricule && (<span> • Matricule: {user?.matricule}</span>)}
                 </p>
               </div>
             </div>
           </div>
-          
-          {/* Navigation Links */}
+
           <div className="flex-grow p-4 overflow-y-auto">
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider dark:text-gray-400 mb-4">
-              Navigation
-            </p>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider dark:text-gray-400 mb-4">Navigation</p>
             <nav className="space-y-1">
               {menuItems.map((item) => (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className={`group flex items-center px-3 py-2.5 rounded-lg transition-colors duration-200 ${
-                    isActive(item.path)
-                      ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300'
-                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                  }`}
-                  onClick={handleLinkClick}
-                >
-                  <span className={`mr-3 ${isActive(item.path) ? 'text-indigo-600 dark:text-indigo-400' : ''}`}>
-                    {item.icon}
-                  </span>
+                <Link key={item.path} to={item.path} className={`group flex items-center px-3 py-2.5 rounded-lg transition-colors duration-200 ${isActive(item.path) ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`} onClick={handleLinkClick}>
+                  <span className={`mr-3 ${isActive(item.path) ? 'text-indigo-600 dark:text-indigo-400' : ''}`}>{item.icon}</span>
                   <span className="truncate">{item.name}</span>
-                  {isActive(item.path) && (
-                    <span className="ml-auto h-2 w-2 rounded-full bg-indigo-600 dark:bg-indigo-400"></span>
-                  )}
+                  {isActive(item.path) && (<span className="ml-auto h-2 w-2 rounded-full bg-indigo-600 dark:bg-indigo-400"></span>)}
                 </Link>
               ))}
             </nav>
-            
-            {/* Support section - only show if there are support items */}
+
             {supportItems.length > 0 && (
               <>
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider dark:text-gray-400 mt-8 mb-4">
-                  Support
-                </p>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider dark:text-gray-400 mt-8 mb-4">Support</p>
                 <nav className="space-y-1">
                   {supportItems.map((item) => (
-                    <Link
-                      key={item.path}
-                      to={item.path}
-                      className="group flex items-center px-3 py-2.5 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
-                      onClick={handleLinkClick}
-                    >
+                    <Link key={item.path} to={item.path} className="group flex items-center px-3 py-2.5 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200" onClick={handleLinkClick}>
                       <span className="mr-3">{item.icon}</span>
                       <span className="truncate">{item.name}</span>
                     </Link>
@@ -231,14 +177,9 @@ function Sidebar({ user, onLogout, isOpen, onClose }) {
               </>
             )}
           </div>
-          
-          {/* Logout Button */}
+
           <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-            <button 
-              type="button"
-              onClick={onLogout} 
-              className="w-full flex items-center justify-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-200"
-            >
+            <button type="button" onClick={onLogout} className="w-full flex items-center justify-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-200">
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
               </svg>
@@ -248,13 +189,8 @@ function Sidebar({ user, onLogout, isOpen, onClose }) {
         </div>
       </div>
 
-      {/* Overlay - shown only on mobile when sidebar is open */}
       {isOpen && (
-        <div 
-          className="fixed inset-0 bg-opacity-25 backdrop-blur-sm z-40 lg:hidden transition-opacity duration-200"
-          onClick={onClose}
-          aria-hidden="true"
-        ></div>
+        <div className="fixed inset-0 bg-opacity-25 backdrop-blur-sm z-40 lg:hidden transition-opacity duration-200" onClick={onClose} aria-hidden="true"></div>
       )}
     </>
   );
