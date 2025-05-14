@@ -13,7 +13,7 @@ import Profile from './pages/Profile';
 import Settings from './pages/Settings';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import FormateurDashboard from './pages/Formateur/FormateurDashboard';
-
+import EtudiantGroupsPage from './pages/Formateur/EtudiantGroupsPage'
 
 import './App.css';
 
