@@ -136,24 +136,17 @@ function Sidebar({ user, onLogout, isOpen, onClose }) {
               Support
             </p>
             <nav className="space-y-1">
-              <a
-                href="#"
+              
+              <Link
+                to="/stagiaire/absences-justification"
                 className="group flex items-center px-3 py-2.5 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
+                onClick={handleLinkClick}
               >
                 <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17v-2a4 4 0 014-4h4M7 7h.01M7 11h.01M7 15h.01M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11a2 2 0 012 2v16z" />
                 </svg>
-                <span className="truncate">Help Center</span>
-              </a>
-              <a
-                href="#"
-                className="group flex items-center px-3 py-2.5 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
-              >
-                <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
-                <span className="truncate">Contact Admin</span>
-              </a>
+                <span className="truncate">Absences & Justifications</span>
+              </Link>
             </nav>
           </div>
           
@@ -185,4 +178,4 @@ function Sidebar({ user, onLogout, isOpen, onClose }) {
   );
 }
 
-export default Sidebar; 
+export default Sidebar;

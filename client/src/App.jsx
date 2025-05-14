@@ -6,6 +6,7 @@ import {
   Navigate,
 } from 'react-router-dom';
 import axios from 'axios';
+import { ThemeProvider } from './contexts/ThemeContext';
 
 import Login from './pages/Login';
 import Dashboard from './pages/Stagiaire/Dashboard';
@@ -13,7 +14,7 @@ import Profile from './pages/Profile';
 import Settings from './pages/Settings';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import FormateurDashboard from './pages/Formateur/FormateurDashboard';
-
+import AbsencesJustification from './pages/Stagiaire/AbsencesJustification';
 
 import './App.css';
 
@@ -136,93 +137,106 @@ function App() {
 
   if (loading) {
     return (
-      <div className="h-screen w-screen flex items-center justify-center bg-white dark:bg-gray-900">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600 mx-auto"></div>
-          <p className="mt-3 text-gray-700 dark:text-gray-300">Loading...</p>
+      <ThemeProvider>
+        <div className="h-screen w-screen flex items-center justify-center bg-white dark:bg-gray-900">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600 mx-auto"></div>
+            <p className="mt-3 text-gray-700 dark:text-gray-300">Loading...</p>
+          </div>
         </div>
-      </div>
+      </ThemeProvider>
     );
   }
 
   return (
-    <div className="h-screen w-screen overflow-hidden touch-auto">
-      <Router>
-        <Routes>
-          {/* Public Route */}
-          <Route
-            path="/login"
-            element={
-              isAuthenticated ? (
-                <Navigate to={getDashboardRoute(user.role)} />
-              ) : <Login login={login} />
-            }
-          />
+    <ThemeProvider>
+      <div className="h-screen w-screen overflow-hidden touch-auto">
+        <Router>
+          <Routes>
+            {/* Public Route */}
+            <Route
+              path="/login"
+              element={
+                isAuthenticated ? (
+                  <Navigate to={getDashboardRoute(user.role)} />
+                ) : <Login login={login} />
+              }
+            />
 
-          {/* Stagiaire Protected Routes */}
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute
-                element={<Dashboard user={user} onLogout={logout} />}
-                allowedRoles={['stagiaire']}
-              />
-            }
-          />
-          <Route
-            path="/profile"
-            element={
-              isAuthenticated && user?.role === 'stagiaire'
-                ? <Profile user={user} onLogout={logout} updateUserProfile={updateUserProfile} />
-                : <Navigate to="/login" />
-            }
-          />
-          <Route
-            path="/settings"
-            element={
-              isAuthenticated && user?.role === 'stagiaire'
-                ? <Settings user={user} onLogout={logout} />
-                : <Navigate to="/login" />
-            }
-          />
+            {/* Stagiaire Protected Routes */}
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute
+                  element={<Dashboard user={user} onLogout={logout} />}
+                  allowedRoles={['stagiaire']}
+                />
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                isAuthenticated && user?.role === 'stagiaire'
+                  ? <Profile user={user} onLogout={logout} updateUserProfile={updateUserProfile} />
+                  : <Navigate to="/login" />
+              }
+            />
+            <Route
+              path="/settings"
+              element={
+                isAuthenticated && user?.role === 'stagiaire'
+                  ? <Settings user={user} onLogout={logout} />
+                  : <Navigate to="/login" />
+              }
+            />
+            <Route
+              path="/stagiaire/absences-justification"
+              element={
+                <ProtectedRoute
+                  element={<AbsencesJustification user={user} />}
+                  allowedRoles={['stagiaire']}
+                />
+              }
+            />
 
-          {/* Admin Protected Route */}
-          <Route
-            path="/admin"
-            element={
-              <ProtectedRoute
-                element={<AdminDashboard user={user} onLogout={logout} />}
-                allowedRoles={['admin']}
-              />
-            }
-          />
+            {/* Admin Protected Route */}
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute
+                  element={<AdminDashboard user={user} onLogout={logout} />}
+                  allowedRoles={['admin']}
+                />
+              }
+            />
 
-          {/* Formateur Protected Route */}
-          <Route
-            path="/formateur/dashboard"
-            element={
-              <ProtectedRoute
-                element={<FormateurDashboard user={user} onLogout={logout} />}
-                allowedRoles={['formateur']}
-              />
-            }
-          />
+            {/* Formateur Protected Route */}
+            <Route
+              path="/formateur/dashboard"
+              element={
+                <ProtectedRoute
+                  element={<FormateurDashboard user={user} onLogout={logout} />}
+                  allowedRoles={['formateur']}
+                />
+              }
+            />
 
-          {/* Default Route */}
-          <Route
-            path="/"
-            element={
-              isAuthenticated ? (
-                <Navigate to={getDashboardRoute(user.role)} />
-              ) : <Navigate to="/login" />
-            }
-          />
+            {/* Default Route */}
+            <Route
+              path="/"
+              element={
+                isAuthenticated ? (
+                  <Navigate to={getDashboardRoute(user.role)} />
+                ) : <Navigate to="/login" />
+              }
+            />
 
-          {/* Catch-all */}
-          <Route path="*" element={<Navigate to="/" />} />
-        </Routes>
-      </Router>
-    </div>
+            {/* Catch-all */}
+            <Route path="*" element={<Navigate to="/" />} />
+          </Routes>
+        </Router>
+      </div>
+    </ThemeProvider>
   );
 }
 

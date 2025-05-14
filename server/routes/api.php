@@ -27,6 +27,7 @@ Route::middleware('auth:sanctum')->group(function () {
     
     // Profile routes
     Route::put('/user/profile', [ProfileController::class, 'updateProfile']);
+    Route::post('/user/profile/photo', [ProfileController::class, 'updatePhoto']);
     Route::put('/user/password', [ProfileController::class, 'updatePassword']);
 
     // Admin routes
