@@ -14,12 +14,8 @@ import Profile from './pages/Profile';
 import Settings from './pages/Settings';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import FormateurDashboard from './pages/Formateur/FormateurDashboard';
-<<<<<<< HEAD
-import EtudiantGroupsPage from './pages/Formateur/EtudiantGroupsPage'
-=======
 import AbsencesJustification from './pages/Stagiaire/AbsencesJustification';
 import EtudiantGroupsPage from  './pages/Formateur/EtudiantGroupsPage';
->>>>>>> 13dde75cca8d9bf2b09803751a87d58d6b2f2b02
 
 import './App.css';
 
