@@ -15,6 +15,7 @@ import Settings from './pages/Settings';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import FormateurDashboard from './pages/Formateur/FormateurDashboard';
 import AbsencesJustification from './pages/Stagiaire/AbsencesJustification';
+import EtudiantGroupsPage from  './pages/Formateur/EtudiantGroupsPage';
 
 import './App.css';
 
@@ -220,6 +221,15 @@ function App() {
                 />
               }
             />
+           <Route
+            path="/groupes"
+            element={
+              <ProtectedRoute
+                element={<EtudiantGroupsPage user={user} onLogout={logout} />}
+                allowedRoles={['formateur']}
+              />
+            }
+          />
 
             {/* Default Route */}
             <Route
