@@ -18,6 +18,7 @@ import AbsencesJustification from './pages/Stagiaire/AbsencesJustification';
 import EtudiantGroupsPage from  './pages/Formateur/EtudiantGroupsPage';
 
 import './App.css';
+import AdminAbsences from './pages/Admin/Absences';
 
 // Fonction utilitaire pour obtenir la route du dashboard selon le rôle
 const getDashboardRoute = (role) => {
@@ -206,6 +207,16 @@ function App() {
               element={
                 <ProtectedRoute
                   element={<AdminDashboard user={user} onLogout={logout} />}
+                  allowedRoles={['admin']}
+                />
+              }
+            />
+
+            <Route
+              path="/absences"
+              element={
+                <ProtectedRoute
+                  element={<AdminAbsences user={user} onLogout={logout} />}
                   allowedRoles={['admin']}
                 />
               }
