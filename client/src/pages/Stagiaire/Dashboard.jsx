@@ -10,7 +10,7 @@ function Dashboard({ user, onLogout }) {
   const [userData, setUserData] = useState(user)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [photoPreview, setPhotoPreview] = useState(user?.photo ? `http://localhost:8000${user.photo}` : null);
+  const [photoPreview, setPhotoPreview] = useState(user?.photo ? `http://localhost:8000/storage/${user.photo}` : null);
   const [stats, setStats] = useState({
     totalAbsences: 0,
     justifiedAbsences: 0,

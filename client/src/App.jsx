@@ -16,6 +16,7 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import FormateurDashboard from './pages/Formateur/FormateurDashboard';
 import AbsencesJustification from './pages/Stagiaire/AbsencesJustification';
 import EtudiantGroupsPage from  './pages/Formateur/EtudiantGroupsPage';
+import ListeDesAbsences from './pages/Formateur/ListeDesAbsences';
 import './App.css';
 import AdminAbsences from './pages/Admin/Absences';
 import AdminJustifications from './pages/Admin/Justification';

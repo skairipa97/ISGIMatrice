@@ -16,7 +16,7 @@ function Profile({ user, onLogout, updateUserProfile }) {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [photoPreview, setPhotoPreview] = useState(user?.photo ? `http://localhost:8000${user.photo}` : null);
+  const [photoPreview, setPhotoPreview] = useState(user?.photo ? `http://localhost:8000/storage/${user.photo}` : null);
   const [photoFile, setPhotoFile] = useState(null);
   const fileInputRef = useRef(null);
   
@@ -26,7 +26,7 @@ useEffect(() => {
   if (user) {
     setPrenom(user.prenom || '');
     setNom(user.nom || '');
-    setPhotoPreview(user.photo ? `http://localhost:8000${user.photo}` : null); // Modification clé ici
+    setPhotoPreview(user.photo ? `http://localhost:8000/storage/${user.photo}` : null); // Modification clé ici
   }
 }, [user]);
 console.log(photoPreview)
