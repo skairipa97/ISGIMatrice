@@ -16,8 +16,9 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import FormateurDashboard from './pages/Formateur/FormateurDashboard';
 import AbsencesJustification from './pages/Stagiaire/AbsencesJustification';
 import EtudiantGroupsPage from  './pages/Formateur/EtudiantGroupsPage';
-
+import ListeDesAbsences from './pages/Formateur/ListeDesAbsences';
 import './App.css';
+import AdminAbsences from './pages/Admin/Absences';
 
 // Fonction utilitaire pour obtenir la route du dashboard selon le rôle
 const getDashboardRoute = (role) => {
@@ -211,6 +212,16 @@ function App() {
               }
             />
 
+            <Route
+              path="/absences"
+              element={
+                <ProtectedRoute
+                  element={<AdminAbsences user={user} onLogout={logout} />}
+                  allowedRoles={['admin']}
+                />
+              }
+            />
+
             {/* Formateur Protected Route */}
             <Route
               path="/formateur/dashboard"
@@ -230,6 +241,15 @@ function App() {
               />
             }
           />
+          <Route
+  path="/formateur/liste-absences/:groupId"
+  element={
+    <ProtectedRoute
+      element={<ListeDesAbsences user={user} onLogout={logout} />}
+      allowedRoles={['formateur']}
+    />
+  }
+/>
 
             {/* Default Route */}
             <Route
