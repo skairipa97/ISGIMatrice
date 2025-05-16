@@ -3,6 +3,8 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\GroupController;
+use App\Http\Controllers\FormateurController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -18,7 +20,7 @@ use Illuminate\Support\Facades\Route;
 */
 
 // Public routes
-Route::post('/login', [AuthController::class, 'login']);
+Route::post('/login', [AuthController::class, 'login'])->name('login');
 
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
@@ -33,4 +35,13 @@ Route::middleware('auth:sanctum')->group(function () {
     // Admin routes
     Route::get('/admin/users/{id}/edit', [AdminController::class, 'edit']);
     Route::put('/admin/users/{id}', [AdminController::class, 'update']);
+
+    // Groupes
+    Route::get('/groups', [GroupController::class, 'index']);
+    Route::get('/groups/{id}', [GroupController::class, 'show']);
+    Route::get('/groups/{groupId}/stagiaires', [GroupController::class, 'stagiaires']);
+
+
+    // Formateurs
+    Route::get('/formateurs/{formateurId}/groups', [FormateurController::class, 'groups']);
 });

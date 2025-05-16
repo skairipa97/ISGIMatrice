@@ -4,6 +4,7 @@ import DashboardLayout from '../../layouts/DashboardLayout'
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from '../../components/ui/Card'
 import Badge from '../../components/ui/Badge'
 import { Search } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 
 function EtudiantGroupsPage({ user, onLogout }) {
   const [userData, setUserData] = useState(user)
@@ -12,128 +13,118 @@ function EtudiantGroupsPage({ user, onLogout }) {
   const [groups, setGroups] = useState([])
   const [selectedType, setSelectedType] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
+  const navigate = useNavigate();
+
+  const getColorByModule = (libelle) => {
+  const label = (libelle || '').toLowerCase();
+
+  if (label.includes('dev')) return 'bg-blue-500';
+  if (label.includes('infra')) return 'bg-green-500';
+  if (label.includes('market') || label.includes('mkt')) return 'bg-purple-500';
+
+  return 'bg-gray-500';
+};
+
+
+  const getBgColorByModule = (libelle) => {
+  const label = (libelle || '').toLowerCase();
+
+  if (label.includes('dev')) return 'bg-blue-100 dark:bg-blue-900/30';
+  if (label.includes('infra')) return 'bg-green-100 dark:bg-green-900/30';
+  if (label.includes('market') || label.includes('mkt')) return 'bg-purple-100 dark:bg-purple-900/30';
+
+  return 'bg-gray-100 dark:bg-gray-800';
+};
+
+
+  const getTextColorByModule = (libelle) => {
+  const label = (libelle || '').toLowerCase();
+
+  if (label.includes('dev')) return 'text-blue-800 dark:text-blue-300';
+  if (label.includes('infra')) return 'text-green-800 dark:text-green-300';
+  if (label.includes('market') || label.includes('mkt')) return 'text-purple-800 dark:text-purple-300';
+
+  return 'text-gray-800 dark:text-gray-300';
+};
+
+
+  const handleViewDetails = (groupId) => {
+    navigate(`/groupes/${groupId}/absences`);
+  };
 
   useEffect(() => {
-    const fetchUserData = async () => {
+    const fetchAffectations = async () => {
       try {
-        const token = localStorage.getItem('token')
-        if (!token) {
-          onLogout()
-          return
+        setLoading(true);
+        setError(null);
+
+        const token = localStorage.getItem('token');
+        const userInfo = user || JSON.parse(localStorage.getItem('user'));
+        const formateurId = userInfo?.id;
+
+        if (!formateurId) {
+          throw new Error('Utilisateur non identifié - Veuillez vous reconnecter');
         }
 
-        const response = await axios.get('http://localhost:8000/api/user', {
-          headers: {
-            'Authorization': `Bearer ${token}`
+        const response = await axios.get(
+          `http://localhost:8000/api/formateurs/${formateurId}/groups`,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Accept': 'application/json'
+            }
           }
-        })
-        
-        setUserData(response.data)
-        
-        // Simulate fetching groups data
-        setGroups([
-          {
-            id: 'DD101',
-            name: 'Développement Digital',
-            type: 'development',
-            color: 'bg-blue-600',
-            textColor: 'text-blue-600',
-            bgColor: 'bg-blue-100',
-            darkBgColor: 'dark:bg-blue-900/30',
-            darkTextColor: 'dark:text-blue-400'
-          },
-          {
-            id: 'ID202',
-            name: 'Infrastructure Digitale',
-            type: 'infrastructure',
-            color: 'bg-green-600',
-            textColor: 'text-green-600',
-            bgColor: 'bg-green-100',
-            darkBgColor: 'dark:bg-green-900/30',
-            darkTextColor: 'dark:text-green-400'
-          },
-          {
-            id: 'MD303',
-            name: 'Marketing Digital',
-            type: 'marketing',
-            color: 'bg-purple-600',
-            textColor: 'text-purple-600',
-            bgColor: 'bg-purple-100',
-            darkBgColor: 'dark:bg-purple-900/30',
-            darkTextColor: 'dark:text-purple-400'
-          }
-        ])
-        
-        setLoading(false)
-      } catch (err) {
-        setError('Failed to fetch user data')
-        setLoading(false)
-        // If unauthorized, log out
-        if (err.response?.status === 401) {
-          onLogout()
+        );
+
+        const affectations = response.data.affectations || [];
+
+        if (!Array.isArray(affectations) || affectations.length === 0) {
+          setGroups([]);
+          setError('Aucune affectation trouvée pour ce formateur.');
+        } else {
+          setGroups(affectations);
         }
+
+      } catch (error) {
+        console.error('Erreur:', error);
+        const errorMessage = error.response
+          ? `Erreur serveur: ${error.response.status} - ${error.response.statusText}`
+          : error.message;
+        setError(errorMessage);
+        setGroups([]);
+      } finally {
+        setLoading(false);
       }
-    }
+    };
 
-    if (!userData) {
-      fetchUserData()
-    } else {
-      // Simulate fetching groups data
-      setGroups([
-        {
-          id: 'DD101',
-          name: 'Développement Digital',
-          type: 'development',
-          color: 'bg-blue-600',
-          textColor: 'text-blue-600',
-          bgColor: 'bg-blue-100',
-          darkBgColor: 'dark:bg-blue-900/30',
-          darkTextColor: 'dark:text-blue-400'
-        },
-        {
-          id: 'ID202',
-          name: 'Infrastructure Digitale',
-          type: 'infrastructure',
-          color: 'bg-green-600',
-          textColor: 'text-green-600',
-          bgColor: 'bg-green-100',
-          darkBgColor: 'dark:bg-green-900/30',
-          darkTextColor: 'dark:text-green-400'
-        },
-        {
-          id: 'MD303',
-          name: 'Marketing Digital',
-          type: 'marketing',
-          color: 'bg-purple-600',
-          textColor: 'text-purple-600',
-          bgColor: 'bg-purple-100',
-          darkBgColor: 'dark:bg-purple-900/30',
-          darkTextColor: 'dark:text-purple-400'
-        }
-      ])
-      setLoading(false)
-    }
-  }, [userData, onLogout])
-  
+    fetchAffectations();
+  }, [user]);
 
   const filterGroups = () => {
-    let filteredGroups = [...groups];
-    
-    // Filter by type
+    let filtered = [...groups];
+
     if (selectedType !== 'all') {
-      filteredGroups = filteredGroups.filter(group => group.type === selectedType);
+      filtered = filtered.filter(a => {
+        const libelle = a.module?.libelle?.toLowerCase() || '';
+        return selectedType === 'development'
+          ? libelle.includes('dev')
+          : selectedType === 'infrastructure'
+          ? libelle.includes('infra')
+          : selectedType === 'marketing'
+          ? libelle.includes('market')
+          : true;
+      });
     }
-    
-    // Filter by search query
+
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      filteredGroups = filteredGroups.filter(group => 
-        group.id.toLowerCase().includes(query) || 
-        group.name.toLowerCase().includes(query)
+      filtered = filtered.filter(a =>
+        a.groupe?.libelle?.toLowerCase().includes(query) ||
+        a.module?.libelle?.toLowerCase().includes(query)
       );
     }
-    
-    return filteredGroups;
+
+    return filtered;
   };
 
   const handleLogout = async () => {
@@ -153,29 +144,21 @@ function EtudiantGroupsPage({ user, onLogout }) {
 
   if (loading) {
     return (
-      <div className="h-full w-full flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="h-full w-full flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative dark:bg-red-900 dark:text-red-100" role="alert">
-          <span className="block sm:inline">Error: {error}</span>
+      <DashboardLayout>
+        <div className="container px-4 py-6 mx-auto">
+          <div className="h-40 w-full flex items-center justify-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+          </div>
         </div>
-      </div>
+      </DashboardLayout>
     )
   }
 
   return (
     <DashboardLayout>
       <div className="container px-4 py-6 mx-auto">
-        {/* Search and Filter Controls */}
         <div className="mb-6 flex flex-col md:flex-row gap-4 items-center justify-between">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Your Group Enrollments</h1>
-          
           <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
             <div className="relative w-full sm:w-64">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -189,7 +172,6 @@ function EtudiantGroupsPage({ user, onLogout }) {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            
             <select
               className="form-select block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 sm:text-sm"
               value={selectedType}
@@ -202,57 +184,63 @@ function EtudiantGroupsPage({ user, onLogout }) {
             </select>
           </div>
         </div>
-        
-        {/* Groups Grid */}
-        <section className="mb-8">
-          {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 animate-pulse">
-                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-2"></div>
-                  <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
-                </div>
-              ))}
-            </div>
-          ) : error ? (
-            <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 p-4 rounded-lg">
+
+        {error && (
+          <div className="mb-6 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 p-4 rounded-lg">
+            <p className="flex items-center">
+              <svg className="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
               {error}
-            </div>
-          ) : (
+            </p>
+          </div>
+        )}
+
+        <section className="mb-8">
+          {groups.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {filterGroups().map((group) => (
-                <Card key={group.id} className="overflow-hidden">
-                  <div className={`h-2 ${group.color}`}></div>
-                  <CardContent className="pt-6">
-                    <div className="mb-4">
-                      <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${group.textColor} ${group.bgColor} ${group.darkBgColor} ${group.darkTextColor}`}>
-                        {group.name}
-                      </span>
-                    </div>
-                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">{group.id}</h3>
-                    <div className="mt-6 flex justify-between items-center">
-                      <button 
-                        className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 flex items-center text-sm font-medium"
-                      >
-                        View Details
-                        <svg className="ml-1 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                      </button>
-                      <button className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">
-                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-                        </svg>
-                      </button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+              {filterGroups().map((affectation) => {
+                const group = affectation.groupe || {};
+                const module = affectation.module || {};
+                const moduleId = module.id || '';
+                const moduleLibelle = module.libelle || 'Module inconnu';
+
+                return (
+                  <Card key={affectation.affectation_id || `${group.id}-${module.id}`} className="overflow-hidden">
+                    <div className={`h-2 ${getColorByModule(moduleLibelle)}`}></div>
+                    <CardContent className="pt-6">
+                      <div className="mb-4">
+                        <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getTextColorByModule(moduleLibelle)} ${getBgColorByModule(moduleLibelle)}`}>
+                          {moduleLibelle}
+                        </span>
+                      </div>
+                      <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                        {group.libelle || 'Groupe inconnu'}
+                      </h3>
+                      <div className="mt-6 flex justify-between items-center">
+                        <button 
+                          className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 flex items-center text-sm font-medium"
+                          onClick={() => handleViewDetails(group.id)}
+                        >
+                          View Details
+                          <svg className="ml-1 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
-          )}
+          ) : !error ? (
+            <div className="p-6 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg text-center">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">No Groups Found</h3>
+              <p className="mt-2 text-gray-600 dark:text-gray-400">You are not currently enrolled in any groups.</p>
+            </div>
+          ) : null}
         </section>
-        
-        {/* Student Information */}
+
         <Card>
           <CardHeader>
             <CardTitle>Student Information</CardTitle>
@@ -263,7 +251,7 @@ function EtudiantGroupsPage({ user, onLogout }) {
               <div className="flex flex-col sm:flex-row sm:gap-6">
                 <div className="sm:w-1/2">
                   <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Nom Complet</p>
-                  <p className="mt-1 text-base font-semibold text-gray-900 dark:text-white">{userData?.nom || 'FATIHI'}&nbsp;{userData?.prenom || 'Aicha'}</p>
+                  <p className="mt-1 text-base font-semibold text-gray-900 dark:text-white">{userData?.nom || 'FATIHI'} {userData?.prenom || 'Aicha'}</p>
                 </div>
                 <div className="mt-4 sm:mt-0 sm:w-1/2">
                   <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Matricule</p>

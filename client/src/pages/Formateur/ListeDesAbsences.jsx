@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react'
 import axios from 'axios'
+import { useParams } from 'react-router-dom';
 import DashboardLayout from '../../layouts/DashboardLayout'
 import { Card, CardHeader, CardContent, CardTitle, CardDescription, CardFooter } from '../../components/ui/Card'
 import { Check, X } from 'lucide-react'
 
 function ListeDesAbsences() {
+  const { groupId } = useParams();
+  const [group, setGroup] = useState(null);
   // État pour la date (défaut = aujourd'hui)
   const today = new Date()
   const dateFormatted = today.toISOString().split('T')[0]
@@ -28,32 +31,64 @@ function ListeDesAbsences() {
   // État pour le statut de sauvegarde
   const [saveStatus, setSaveStatus] = useState('')
   
-  // Simulation de chargement des stagiaires depuis l'API
-  useEffect(() => {
-    const fetchStagiaires = async () => {
-      try {
-        // Ici vous feriez normalement un appel API
-        // Simulation de données
-        const fakeStagiaires = [
-          { id: 1, matricule: '123456', nom: 'Benani', prenom: 'Ahmed', absences: { s1: false, s2: false, s3: false, s4: false } },
-          { id: 2, matricule: '234567', nom: 'Alaoui', prenom: 'Fatima', absences: { s1: false, s2: false, s3: false, s4: false } },
-          { id: 3, matricule: '345678', nom: 'Karimi', prenom: 'Younes', absences: { s1: false, s2: false, s3: false, s4: false } },
-          { id: 4, matricule: '456789', nom: 'Fadili', prenom: 'Samira', absences: { s1: false, s2: false, s3: false, s4: false } },
-          { id: 5, matricule: '567890', nom: 'Hakimi', prenom: 'Karim', absences: { s1: false, s2: false, s3: false, s4: false } },
-          { id: 6, matricule: '678901', nom: 'Ziani', prenom: 'Layla', absences: { s1: false, s2: false, s3: false, s4: false } },
-        ]
-        
-        setStagiaires(fakeStagiaires)
-        setLoading(false)
-      } catch (err) {
-        console.error('Erreur lors du chargement des stagiaires:', err)
-        setError('Erreur lors du chargement des données')
-        setLoading(false)
+useEffect(() => {
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      setError('');
+
+      const token = localStorage.getItem('token');
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      };
+
+      // 1. Fetch group details if groupId exists
+      if (groupId) {
+        const groupResponse = await axios.get(
+          `http://votre-domaine-laravel/api/groups/${groupId}`, 
+          { headers }
+        );
+        setGroup(groupResponse.data);
       }
+
+      // 2. Fetch students for the group (or all students if no group specified)
+      const stagiairesResponse = await axios.get(
+        groupId 
+          ? `http://votre-domaine-laravel/api/groups/${groupId}/stagiaires`
+          : 'http://votre-domaine-laravel/api/stagiaires',
+        { headers }
+      );
+
+      // Add default absence status to each stagiaire
+      const stagiairesWithAbsences = stagiairesResponse.data.map(stagiaire => ({
+        ...stagiaire,
+        absences: { s1: false, s2: false, s3: false, s4: false }
+      }));
+
+      setStagiaires(stagiairesWithAbsences);
+
+    } catch (err) {
+      console.error('Error fetching data:', err);
+      
+      // Handle different error cases
+      if (err.response?.status === 401) {
+        setError('Session expirée - Veuillez vous reconnecter');
+        // Optionally redirect to login
+      } else if (err.response?.status === 404) {
+        setError('Groupe non trouvé');
+      } else {
+        setError('Erreur lors du chargement des données');
+      }
+      
+    } finally {
+      setLoading(false);
     }
-    
-    fetchStagiaires()
-  }, [])
+  };
+
+  fetchData();
+}, [groupId]);
   
   // Gestion du changement de mode présentiel/distanciel
   const handlePresentielChange = (e) => {

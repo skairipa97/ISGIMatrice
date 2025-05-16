@@ -252,15 +252,15 @@ function App() {
               />
             }
           />
-          <Route
-  path="/formateur/liste-absences/:groupId"
-  element={
-    <ProtectedRoute
-      element={<ListeDesAbsences user={user} onLogout={logout} />}
-      allowedRoles={['formateur']}
-    />
-  }
-/>
+        <Route
+          path="/groupes/:groupId/absences"
+          element={
+            <ProtectedRoute
+              element={<ListeDesAbsences user={user} onLogout={logout} />}
+              allowedRoles={['formateur']}
+            />
+          }
+        />
 
             {/* Default Route */}
             <Route
