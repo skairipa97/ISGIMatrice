@@ -17,19 +17,8 @@ function Settings({ user, onLogout }) {
               Application Settings
             </h3>
             <div className="mt-5 space-y-6">
-              <div>
-                <label className="flex items-center space-x-3">
-                  <input type="checkbox" className="form-checkbox h-5 w-5 text-indigo-600 rounded" />
-                  <span className="text-gray-900 dark:text-white">Enable notifications</span>
-                </label>
-              </div>
-              
-              <div>
-                <label className="flex items-center space-x-3">
-                  <input type="checkbox" className="form-checkbox h-5 w-5 text-indigo-600 rounded" />
-                  <span className="text-gray-900 dark:text-white">Dark mode</span>
-                </label>
-              </div>
+                      
+             
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -38,8 +27,7 @@ function Settings({ user, onLogout }) {
                 <select className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
                   <option>English</option>
                   <option>French</option>
-                  <option>German</option>
-                  <option>Spanish</option>
+              
                 </select>
               </div>
               

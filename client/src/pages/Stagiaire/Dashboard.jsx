@@ -29,7 +29,7 @@ function Dashboard({ user, onLogout }) {
           return
         }
 
-        // Fetch user data
+        // Récupération des données utilisateur
         const userResponse = await axios.get('http://localhost:8000/api/user', {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -37,7 +37,7 @@ function Dashboard({ user, onLogout }) {
         })
         setUserData(userResponse.data)
         
-        // Fetch absences data
+        // Récupération des données d'absences
         const absencesResponse = await fetch(`http://localhost:8000/api/absences?stagiaire=${matricule}`, {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -46,16 +46,16 @@ function Dashboard({ user, onLogout }) {
         })
 
         if (!absencesResponse.ok) {
-          throw new Error('Failed to fetch absences data')
+          throw new Error('Échec de récupération des données d\'absences')
         }
 
         const absencesData = await absencesResponse.json()
         
-        // Calculate stats
+        // Calcul des statistiques
         const justifiedAbsences = absencesData.filter(abs => abs.is_justified).length
         const unjustifiedAbsences = absencesData.filter(abs => !abs.is_justified).length
         
-        // Determine warning level
+        // Détermination du niveau d'alerte
         let warningLevel = 'normal'
         if (unjustifiedAbsences >= 5) {
           warningLevel = 'danger'
@@ -72,7 +72,7 @@ function Dashboard({ user, onLogout }) {
         
         setLoading(false)
       } catch (err) {
-        console.error('Error fetching data:', err)
+        console.error('Erreur lors de la récupération des données:', err)
         setError(err.message.includes('<!doctype') 
           ? 'Erreur de connexion au serveur' 
           : err.message)
@@ -97,13 +97,13 @@ function Dashboard({ user, onLogout }) {
         }
       })
     } catch (err) {
-      console.error('Logout error:', err)
+      console.error('Erreur de déconnexion:', err)
     } finally {
       onLogout()
     }
   }
 
-  // Get appropriate color for warning level
+  // Obtenir la couleur appropriée pour le niveau d'alerte
   const getWarningLevelColor = (level) => {
     switch (level) {
       case 'normal':
@@ -129,7 +129,7 @@ function Dashboard({ user, onLogout }) {
     return (
       <div className="h-full w-full flex items-center justify-center bg-gray-50 dark:bg-gray-900">
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative dark:bg-red-900 dark:text-red-100" role="alert">
-          <span className="block sm:inline">Error: {error}</span>
+          <span className="block sm:inline">Erreur : {error}</span>
         </div>
       </div>
     )
@@ -138,15 +138,15 @@ function Dashboard({ user, onLogout }) {
   return (
     <DashboardLayout user={userData} onLogout={handleLogout}>
       <div className="space-y-6">
-        {/* Welcome Section */}
+        {/* Section de bienvenue */}
         <div className="bg-gradient-to-r from-indigo-500 to-purple-600 dark:from-indigo-600 dark:to-purple-700 rounded-xl shadow-lg overflow-hidden">
           <div className="px-6 py-8 md:px-8 md:flex md:items-center md:justify-between">
             <div>
               <h1 className="text-2xl font-bold text-white">
-                Welcome back, {userData?.nom}&nbsp;{userData?.prenom}
+                Bon retour, {userData?.nom}&nbsp;{userData?.prenom}
               </h1>
               <p className="mt-2 text-indigo-100">
-                Here's an overview of your attendance information.
+                Voici un aperçu de vos informations de présence.
               </p>
             </div>
             <div className="mt-4 md:mt-0 flex-shrink-0">
@@ -154,7 +154,7 @@ function Dashboard({ user, onLogout }) {
                 <div className="h-20 w-20 rounded-full overflow-hidden ring-1 ring-indigo-500 dark:ring-indigo-400">
                   <img 
                     src={photoPreview} 
-                    alt="Profile" 
+                    alt="Profil" 
                     className="h-full w-full object-cover"
                     onError={(e) => {
                       console.error('Photo inaccessible:', photoPreview);
@@ -176,17 +176,17 @@ function Dashboard({ user, onLogout }) {
           </div>
         </div>
         
-        {/* Stats Grid */}
+        {/* Grille de statistiques */}
         <section className="mb-8">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-            Absence Statistics
+            Statistiques d'absence
           </h2>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
               <div className="flex justify-between items-start">
                 <div>
-                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Absences</p>
+                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total des absences</p>
                   <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{stats.totalAbsences}</p>
                 </div>
                 <span className="p-2 rounded-md bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400">
@@ -200,7 +200,7 @@ function Dashboard({ user, onLogout }) {
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
               <div className="flex justify-between items-start">
                 <div>
-                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Justified Absences</p>
+                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Absences justifiées</p>
                   <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{stats.justifiedAbsences}</p>
                 </div>
                 <span className="p-2 rounded-md bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
@@ -214,7 +214,7 @@ function Dashboard({ user, onLogout }) {
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
               <div className="flex justify-between items-start">
                 <div>
-                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Unjustified Absences</p>
+                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Absences non justifiées</p>
                   <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{stats.unjustifiedAbsences}</p>
                 </div>
                 <span className="p-2 rounded-md bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400">
@@ -227,7 +227,7 @@ function Dashboard({ user, onLogout }) {
           </div>
         </section>
         
-        {/* Warning level */}
+        {/* Niveau d'alerte */}
         <section className="mb-8">
           <div className={`rounded-lg p-4 ${getWarningLevelColor(stats.warningLevel)}`}>
             <div className="flex">
@@ -248,38 +248,38 @@ function Dashboard({ user, onLogout }) {
               </div>
               <div className="ml-3">
                 <h3 className="font-medium">
-                  {stats.warningLevel === 'normal' ? 'Your attendance is good' : 
-                   stats.warningLevel === 'warning' ? 'Warning: You\'re approaching the absence limit' :
-                   'Alert: You\'ve exceeded the absence limit'}
+                  {stats.warningLevel === 'normal' ? 'Votre assiduité est bonne' : 
+                   stats.warningLevel === 'warning' ? 'Attention : Vous approchez de la limite d\'absences' :
+                   'Alerte : Vous avez dépassé la limite d\'absences'}
                 </h3>
                 <p className="text-sm mt-1">
-                  {stats.warningLevel === 'normal' ? 'Keep up the good work! Your absences are under control.' : 
-                   stats.warningLevel === 'warning' ? 'You should be careful with further absences.' :
-                   'Please contact administration immediately regarding your absences.'}
+                  {stats.warningLevel === 'normal' ? 'Continuez ainsi ! Vos absences sont sous contrôle.' : 
+                   stats.warningLevel === 'warning' ? 'Vous devriez faire attention aux absences supplémentaires.' :
+                   'Veuillez contacter l\'administration immédiatement concernant vos absences.'}
                 </p>
               </div>
             </div>
           </div>
         </section>
         
-        {/* User Information Card */}
+        {/* Carte d'informations utilisateur */}
         <Card>
           <CardHeader>
-            <CardTitle>User Information</CardTitle>
-            <CardDescription>Your account details</CardDescription>
+            <CardTitle>Informations utilisateur</CardTitle>
+            <CardDescription>Détails de votre compte</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <div className="flex flex-col sm:flex-row sm:gap-6">
                 <div className="sm:w-1/2">
-                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Nom Complet</p>
+                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Nom complet</p>
                   <p className="mt-1 text-base font-semibold text-gray-900 dark:text-white">{userData?.nom}&nbsp;{userData?.prenom}</p>
                 </div>
                 <div className="mt-4 sm:mt-0 sm:w-1/2">
                   <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Matricule</p>
                   <div className="mt-1 flex items-center">
                     <p className="text-base font-semibold text-gray-900 dark:text-white">{userData?.matricule}</p>
-                    <Badge variant="primary" className="ml-2">Active</Badge>
+                    <Badge variant="primary" className="ml-2">Actif</Badge>
                   </div>
                 </div>
               </div>

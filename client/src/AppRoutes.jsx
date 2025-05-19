@@ -76,6 +76,8 @@ const AppRoutes = () => {
       localStorage.setItem('token', data.token);
       localStorage.setItem('role', data.role);
       localStorage.setItem('matricule', data.user?.matricule);
+      localStorage.setItem('user', data.user);
+   
 
       const userWithRole = {
         ...data.user,

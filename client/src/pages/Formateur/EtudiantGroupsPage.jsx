@@ -24,6 +24,7 @@ function EtudiantGroupsPage({ user, onLogout }) {
 
   return 'bg-gray-500';
 };
+ console.log(userData)
 
 
   const getBgColorByModule = (libelle) => {
@@ -156,8 +157,8 @@ function EtudiantGroupsPage({ user, onLogout }) {
   }
 
   return (
-    <DashboardLayout>
-      <div className="container px-4 py-6 mx-auto">
+  <DashboardLayout user={user} onLogout={onLogout}>
+        <div className="container px-4 py-6 mx-auto">
         <div className="mb-6 flex flex-col md:flex-row gap-4 items-center justify-between">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Your Group Enrollments</h1>
           <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">

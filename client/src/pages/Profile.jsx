@@ -348,14 +348,14 @@ console.log(user);
                     onClick={handlePhotoClick}
                     className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
                   >
-                    Change Profile Picture
+                    Changer Photo de Profile 
                   </button>
                 </div>
               </div>
               
               <div className="sm:w-2/3">
                 <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white mb-4">
-                  Personal Information
+                   Informations Personnels
                 </h3>
                 
                 {message.text && (
@@ -406,7 +406,7 @@ console.log(user);
                       disabled
                       className="mt-1 block w-full border border-gray-300 dark:border-gray-700 rounded-md shadow-sm py-2 px-3 bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-300 cursor-not-allowed sm:text-sm"
                     />
-                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Matricule cannot be changed</p>
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Matricule ne peut pas être modifié</p>
                   </div>
                   
                   <div className="pt-5">
@@ -440,7 +440,7 @@ console.log(user);
         <div className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
           <div className="px-4 py-5 sm:p-6">
             <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white mb-4">
-              Change Password
+              Changer le Mot de Passe
             </h3>
 
             {passwordMessage.text && (
@@ -456,7 +456,7 @@ console.log(user);
             <form className="space-y-6" onSubmit={handlePasswordSubmit}>
               <div>
                 <label htmlFor="current_password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Current Password
+                  Mot de Passe actuel
                 </label>
                 <div className="mt-1 relative rounded-md shadow-sm">
                   <input
@@ -487,7 +487,7 @@ console.log(user);
 
               <div>
                 <label htmlFor="new_password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  New Password
+                  Nouveau Mot de Passe
                 </label>
                 <div className="mt-1 relative rounded-md shadow-sm">
                   <input
@@ -519,7 +519,7 @@ console.log(user);
 
               <div>
                 <label htmlFor="confirm_password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Confirm New Password
+                  Confirmez le Nouveau Mot de Passe
                 </label>
                 <div className="mt-1 relative rounded-md shadow-sm">
                   <input
@@ -566,7 +566,7 @@ console.log(user);
                       </svg>
                       Updating...
                     </>
-                  ) : 'Change Password'}
+                  ) : 'Changer Mot de Passe'}
                 </button>
               </div>
             </form>

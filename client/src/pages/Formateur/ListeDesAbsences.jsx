@@ -5,7 +5,7 @@ import DashboardLayout from '../../layouts/DashboardLayout'
 import { Card, CardHeader, CardContent, CardTitle, CardDescription, CardFooter } from '../../components/ui/Card'
 import { Check, X } from 'lucide-react'
 
-function ListeDesAbsences({ onLogout }) {
+function ListeDesAbsences({ user, onLogout }) {
   const { groupId } = useParams();
   const [group, setGroup] = useState(null);
   const [moduleId, setModuleId] = useState(null);
@@ -219,7 +219,7 @@ function ListeDesAbsences({ onLogout }) {
   }
   
   return (
-    <DashboardLayout onLogout={onLogout}>
+  <DashboardLayout user={user} onLogout={onLogout}>
       <div className="container px-4 py-6 mx-auto">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
           Feuille de Présence - {group?.nom || 'Groupe'}

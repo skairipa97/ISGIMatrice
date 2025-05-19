@@ -3,7 +3,7 @@ import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
 import DashboardLayout from '../../layouts/DashboardLayout';
 
-function AbsencesJustification({ onLogout }) {
+function AbsencesJustification({ user , onLogout }) {
   const [absences, setAbsences] = useState([]);
   const [selectedAbsence, setSelectedAbsence] = useState(null);
   const [raison, setRaison] = useState('');
@@ -157,7 +157,7 @@ function AbsencesJustification({ onLogout }) {
     );
   }
   return (
-    <DashboardLayout onLogout={onLogout}>
+    <DashboardLayout user={user} onLogout={onLogout}>
       <div className="max-w-6xl mx-auto p-4 space-y-8">
         {/* Unjustified absences */}
         <div>
