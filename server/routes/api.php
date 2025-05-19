@@ -5,6 +5,9 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\GroupController;
 use App\Http\Controllers\FormateurController;
+use App\Http\Controllers\SeanceController;
+use App\Http\Controllers\AbsenceController;
+use App\Http\Controllers\JustificationController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -35,13 +38,28 @@ Route::middleware('auth:sanctum')->group(function () {
     // Admin routes
     Route::get('/admin/users/{id}/edit', [AdminController::class, 'edit']);
     Route::put('/admin/users/{id}', [AdminController::class, 'update']);
+    Route::get('/admin/absences', [AbsenceController::class, 'adminAbsences']);
 
     // Groupes
     Route::get('/groups', [GroupController::class, 'index']);
-    Route::get('/groups/{id}', [GroupController::class, 'show']);
-    Route::get('/groups/{groupId}/stagiaires', [GroupController::class, 'stagiaires']);
+    Route::get('/groupes/{id}', [GroupController::class, 'show']);
+    Route::get('/groupes/{groupId}/stagiaires', [GroupController::class, 'stagiaires']);
 
 
     // Formateurs
     Route::get('/formateurs/{formateurId}/groups', [FormateurController::class, 'groups']);
+    Route::get('/formateurs/{formateurId}/absences', [AbsenceController::class, 'absencesForFormateur']);
+
+    // Seances
+    Route::post('/seances', [SeanceController::class, 'store']);
+
+    // Absences
+    Route::get('/absences', [AbsenceController::class, 'index']);
+    Route::get('/absences/critical', [AbsenceController::class, 'critical']);
+
+     // Justification routes
+     Route::get('/justifications', [JustificationController::class, 'index']);
+     Route::post('/justifications', [JustificationController::class, 'store']);
+     Route::get('/justifications/pending', [JustificationController::class, 'pending']);
+    Route::put('/justifications/{id}/status', [JustificationController::class, 'updateStatus']);
 });

@@ -29,6 +29,14 @@ class Stagiaire extends Model
 
     public function groupe()
     {
-        return $this->belongsTo(Groupe::class);
+        return $this->belongsTo(Groupe::class, 'groupe_id');
+    }
+    public function absences()
+    {
+        return $this->hasMany(Absence::class, 'stagiaire_matricule', 'matricule');
+    }
+    public function filiere()
+    {
+        return $this->belongsTo(Filiere::class);
     }
 }

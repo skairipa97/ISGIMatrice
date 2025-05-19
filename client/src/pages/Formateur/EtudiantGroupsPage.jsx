@@ -18,7 +18,7 @@ function EtudiantGroupsPage({ user, onLogout }) {
   const getColorByModule = (libelle) => {
   const label = (libelle || '').toLowerCase();
 
-  if (label.includes('dev')) return 'bg-blue-500';
+  if (label.includes('fs')|| label.includes('dd')) return 'bg-blue-500';
   if (label.includes('infra')) return 'bg-green-500';
   if (label.includes('market') || label.includes('mkt')) return 'bg-purple-500';
 
@@ -28,10 +28,10 @@ function EtudiantGroupsPage({ user, onLogout }) {
 
   const getBgColorByModule = (libelle) => {
   const label = (libelle || '').toLowerCase();
-
-  if (label.includes('dev')) return 'bg-blue-100 dark:bg-blue-900/30';
-  if (label.includes('infra')) return 'bg-green-100 dark:bg-green-900/30';
-  if (label.includes('market') || label.includes('mkt')) return 'bg-purple-100 dark:bg-purple-900/30';
+  
+  if (label.includes('fs') || label.includes('dd')) {return 'bg-blue-100 dark:bg-blue-900/30';}  
+  if (label.includes('id')) return 'bg-green-100 dark:bg-green-900/30';
+  if (label.includes('Gestion') || label.includes('mkt')) return 'bg-purple-100 dark:bg-purple-900/30';
 
   return 'bg-gray-100 dark:bg-gray-800';
 };
@@ -40,9 +40,9 @@ function EtudiantGroupsPage({ user, onLogout }) {
   const getTextColorByModule = (libelle) => {
   const label = (libelle || '').toLowerCase();
 
-  if (label.includes('dev')) return 'text-blue-800 dark:text-blue-300';
-  if (label.includes('infra')) return 'text-green-800 dark:text-green-300';
-  if (label.includes('market') || label.includes('mkt')) return 'text-purple-800 dark:text-purple-300';
+  if (label.includes('fs') || label.includes('dd')) return 'text-blue-800 dark:text-blue-300';
+  if (label.includes('id')) return 'text-green-800 dark:text-green-300';
+  if (label.includes('Gestion') || label.includes('mkt')) return 'text-purple-800 dark:text-purple-300';
 
   return 'text-gray-800 dark:text-gray-300';
 };
@@ -77,6 +77,7 @@ function EtudiantGroupsPage({ user, onLogout }) {
         );
 
         const affectations = response.data.affectations || [];
+        console.log(affectations);
 
         if (!Array.isArray(affectations) || affectations.length === 0) {
           setGroups([]);
@@ -201,16 +202,17 @@ function EtudiantGroupsPage({ user, onLogout }) {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {filterGroups().map((affectation) => {
                 const group = affectation.groupe || {};
+                const groupeLibelle = affectation.groupe.libelle;
                 const module = affectation.module || {};
                 const moduleId = module.id || '';
                 const moduleLibelle = module.libelle || 'Module inconnu';
 
                 return (
                   <Card key={affectation.affectation_id || `${group.id}-${module.id}`} className="overflow-hidden">
-                    <div className={`h-2 ${getColorByModule(moduleLibelle)}`}></div>
+                    <div className={`h-2 ${getColorByModule(groupeLibelle)}`}></div>
                     <CardContent className="pt-6">
                       <div className="mb-4">
-                        <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getTextColorByModule(moduleLibelle)} ${getBgColorByModule(moduleLibelle)}`}>
+                        <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getTextColorByModule(groupeLibelle)} ${getBgColorByModule(groupeLibelle)}`}>
                           {moduleLibelle}
                         </span>
                       </div>

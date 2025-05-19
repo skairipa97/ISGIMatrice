@@ -14,7 +14,7 @@ class AdminSeeder extends Seeder
     public function run(): void
     {
         Admin::create([
-            'matricule' => 'admin001', // Example matricule
+            'matricule' => 'SURV001', // Example matricule
             'mdp' => Hash::make('admin123'), // Example password (hashed)
         ]);
     

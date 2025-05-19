@@ -25,70 +25,53 @@ function FormateurDashboard({ user, onLogout }) {
     const fetchFormateurData = async () => {
       try {
         const token = localStorage.getItem('token')
-        if (!token) {
-          onLogout()
-          return
-        }
+        const userInfo = userData || JSON.parse(localStorage.getItem('user'))
+        const formateurId = userInfo?.id
 
-        const response = await axios.get('http://localhost:8000/api/user', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        })
-        
-        setUserData(response.data)
-        
-        // Simulate fetching stats
+        // Fetch groups and absences in parallel
+        const [groupsRes, absencesRes] = await Promise.all([
+          axios.get(
+            `http://localhost:8000/api/formateurs/${formateurId}/groups`,
+            { headers: { 'Authorization': `Bearer ${token}` } }
+          ),
+          axios.get(
+            `http://localhost:8000/api/formateurs/${formateurId}/absences`,
+            { headers: { 'Authorization': `Bearer ${token}` } }
+          )
+        ])
+
+        // Process groups data
+        const affectations = groupsRes.data.affectations || []
+        setGroupes(affectations.map(a => ({
+          id: a.groupe.id,
+          nom: a.groupe.libelle
+        })))
+
+        // Process absences data
+        const absencesData = absencesRes.data.absences || []
+        setAbsences(absencesData)
+
+        // Extract unique filieres from absences
+        const filieresSet = new Set(absencesData.map(a => a.filiere))
+        setFilieres([...filieresSet].map((f, i) => ({ id: i + 1, nom: f })))
+
+        // Update stats
         setStats({
-          totalGroupes: 6,
-          totalEtudiants: 158,
-          absencesRecentes: 24
+          totalGroupes: affectations.length,
+          totalEtudiants: absencesRes.data.total_etudiants || 0,
+          absencesRecentes: absencesData.length
         })
 
-        // Simulate fetching groupes
-        setGroupes([
-          { id: 1, nom: 'GLSID 1', filiere: 'GLSID' },
-          { id: 2, nom: 'GLSID 2', filiere: 'GLSID' },
-          { id: 3, nom: 'BDCC 1', filiere: 'BDCC' },
-          { id: 4, nom: 'BDCC 2', filiere: 'BDCC' },
-          { id: 5, nom: 'IIR 1', filiere: 'IIR' },
-          { id: 6, nom: 'IIR 2', filiere: 'IIR' },
-        ])
-
-        // Simulate fetching filieres
-        setFilieres([
-          { id: 1, nom: 'GLSID' },
-          { id: 2, nom: 'BDCC' },
-          { id: 3, nom: 'IIR' },
-        ])
-
-        // Simulate fetching absences
-        setAbsences([
-          { id: 1, etudiant: { nom: 'Alaoui', prenom: 'Karim', matricule: 'ETU001', avatar: null }, date: '2025-05-10', cours: 'Java Avancé', groupe: 'GLSID 1', filiere: 'GLSID', justifiee: false },
-          { id: 2, etudiant: { nom: 'Bennani', prenom: 'Laila', matricule: 'ETU023', avatar: null }, date: '2025-05-10', cours: 'Java Avancé', groupe: 'GLSID 1', filiere: 'GLSID', justifiee: true },
-          { id: 3, etudiant: { nom: 'Tazi', prenom: 'Youssef', matricule: 'ETU045', avatar: null }, date: '2025-05-11', cours: 'DevOps', groupe: 'BDCC 2', filiere: 'BDCC', justifiee: false },
-          { id: 4, etudiant: { nom: 'Idrissi', prenom: 'Salma', matricule: 'ETU067', avatar: null }, date: '2025-05-12', cours: 'Réseaux', groupe: 'IIR 1', filiere: 'IIR', justifiee: false },
-          { id: 5, etudiant: { nom: 'El Amrani', prenom: 'Ahmed', matricule: 'ETU089', avatar: null }, date: '2025-05-12', cours: 'Réseaux', groupe: 'IIR 1', filiere: 'IIR', justifiee: true },
-          { id: 6, etudiant: { nom: 'Bouhdoud', prenom: 'Fatima', matricule: 'ETU125', avatar: null }, date: '2025-05-13', cours: 'Big Data', groupe: 'BDCC 1', filiere: 'BDCC', justifiee: false },
-        ])
-        
         setLoading(false)
       } catch (err) {
-        setError('Failed to fetch user data')
+        console.error('Fetch error:', err)
+        setError(err.response?.data?.message || 'Failed to fetch dashboard data')
         setLoading(false)
-        // If unauthorized, log out
-        if (err.response?.status === 401) {
-          onLogout()
-        }
       }
     }
 
-    if (!userData) {
-      fetchFormateurData()
-    } else {
-      setLoading(false)
-    }
-  }, [userData, onLogout])
+    fetchFormateurData()
+  }, [userData])
   
   const handleLogout = async () => {
     try {
@@ -179,7 +162,7 @@ function FormateurDashboard({ user, onLogout }) {
                 <div className="flex justify-between items-start">
                   <div>
                     <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total des Groupes</p>
-                    <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{stats.totalGroupes}</p>
+                    <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">{groupes.length}</p>
                   </div>
                   <span className="p-2 rounded-md bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">
                     <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">

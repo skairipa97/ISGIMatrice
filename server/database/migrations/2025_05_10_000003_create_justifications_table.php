@@ -16,6 +16,7 @@ return new class extends Migration
             $table->foreignId('absence_id')->constrained('absences')->onDelete('cascade');
             $table->string('raison');
             $table->string('preuve')->nullable(); // file path or filename
+            $table->boolean('validation')->default(false);
             $table->timestamps();
         });
     }

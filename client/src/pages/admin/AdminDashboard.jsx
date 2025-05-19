@@ -10,10 +10,11 @@ const AdminDashboard = ({ user, onLogout }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [stats, setStats] = useState({
-    pendingJustifications: 5, // Exemple: 5 justificatifs en attente
-    longAbsences: 3, // Exemple: 3 utilisateurs avec +20h d'absences
-    adminLevel: 'admin' // admin, super-admin
+    pendingJustifications: 0,
+    longAbsences: 0,
+    adminLevel: user?.isSuperAdmin ? 'super-admin' : 'admin' // Use prop data as fallback
   });
+  const [criticalAbsenceStudents, setCriticalAbsenceStudents] = useState([]);
 
   useEffect(() => {
     const fetchAdminData = async () => {
@@ -24,38 +25,63 @@ const AdminDashboard = ({ user, onLogout }) => {
           return;
         }
 
-        // Fetch admin data
-        const response = await axios.get('http://localhost:8000/api/admin', {
-          headers: {
-            'Authorization': `Bearer ${token}`
+        // Only fetch what we know exists from Justification.jsx
+        const pendingResponse = await axios.get(
+          'http://localhost:8000/api/justifications/pending', 
+          {
+            headers: { 'Authorization': `Bearer ${token}` }
           }
-        });
-        
-        setUserData(response.data);
-        
-        // Simuler la récupération des nouvelles statistiques
+        );
+
+        // For critical absences endpoint
+        let criticalAbsences = [];
+        try {
+          const absencesResponse = await axios.get(
+            'http://localhost:8000/api/absences/critical',
+            {
+              headers: { 'Authorization': `Bearer ${token}` },
+              params: { threshold: 20 }
+            }
+          );
+          criticalAbsences = absencesResponse.data || [];
+        } catch (absencesError) {
+          console.error('Critical absences fetch error:', absencesError);
+          // Si erreur, on garde longAbsences à 0
+          criticalAbsences = [];
+        }
+        setCriticalAbsenceStudents(criticalAbsences);
+        setStats(prevStats => ({
+          ...prevStats,
+          longAbsences: criticalAbsences.length,
+          adminLevel: user?.isSuperAdmin ? 'super-admin' : 'admin'
+        }));
+
         setStats({
-          pendingJustifications: response.data.pendingJustifications || 5,
-          longAbsences: response.data.longAbsences || 3,
-          adminLevel: response.data.isSuperAdmin ? 'super-admin' : 'admin'
+          pendingJustifications: pendingResponse.data.length || 0,
+          longAbsences: criticalAbsences.length || 0,
+          adminLevel: user?.isSuperAdmin ? 'super-admin' : 'admin'
         });
         
         setLoading(false);
       } catch (err) {
-        setError('Failed to fetch admin data');
-        setLoading(false);
-        if (err.response?.status === 401) {
+        console.error('Fetch error:', err);
+        
+        // More specific error message
+        if (err.response?.status === 404) {
+          setError('Some dashboard features are currently unavailable');
+        } else if (err.response?.status === 401) {
+          setError('Session expired - Please login again');
           onLogout();
+        } else {
+          setError('Failed to load dashboard data');
         }
+        
+        setLoading(false);
       }
     };
 
-    if (!userData) {
-      fetchAdminData();
-    } else {
-      setLoading(false);
-    }
-  }, [userData, onLogout]);
+    fetchAdminData();
+  }, [onLogout, user]);
 
   const handleLogout = async () => {
     try {
@@ -88,11 +114,20 @@ const AdminDashboard = ({ user, onLogout }) => {
 
   if (error) {
     return (
-      <div className="h-full w-full flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative dark:bg-red-900 dark:text-red-100" role="alert">
-          <span className="block sm:inline">Error: {error}</span>
+      <DashboardLayout user={userData} onLogout={handleLogout}>
+        <div className="h-full w-full flex items-center justify-center">
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative dark:bg-red-900 dark:text-red-100 max-w-md" role="alert">
+            <strong className="font-bold">Erreur!</strong>
+            <span className="block sm:inline"> {error}</span>
+            <button 
+              onClick={() => setError('')}
+              className="absolute top-0 right-0 px-2 py-1"
+            >
+              ×
+            </button>
+          </div>
         </div>
-      </div>
+      </DashboardLayout>
     );
   }
 
@@ -104,15 +139,15 @@ const AdminDashboard = ({ user, onLogout }) => {
           <div className="px-6 py-8 md:px-8 md:flex md:items-center md:justify-between">
             <div>
               <h1 className="text-2xl font-bold text-white">
-                Tableau de Bord Admin
+                Tableau de Bord de Surveillance général
               </h1>
               <p className="mt-2 text-indigo-100">
-                Bienvenue, {userData?.name || 'Admin'}!
+                Bienvenue!
               </p>
             </div>
             <div className="mt-4 md:mt-0 flex-shrink-0">
               <Avatar 
-                name={userData?.name || 'Admin'}
+                name={userData?.name || 'Surveillance'}
                 size="xl" 
                 status="online"
               />
@@ -120,19 +155,18 @@ const AdminDashboard = ({ user, onLogout }) => {
           </div>
         </div>
         
-        {/* Stats Grid - Version modifiée */}
+        {/* Stats Grid */}
         <section className="mb-8">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
             Alertes et Statistiques
           </h2>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Justificatifs en attente */}
+            {/* Justificatifs en attente - This one works */}
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
               <div className="flex justify-between items-start">
                 <div>
                   <p className="text-sm font-bold text-gray-500 dark:text-gray-400">Justificatifs en attente</p>
-
                   <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">
                     {stats.pendingJustifications}
                     <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
@@ -151,12 +185,11 @@ const AdminDashboard = ({ user, onLogout }) => {
               </div>
             </div>
             
-            {/* +20h d'absences */}
+            {/* +20h d'absences - Now working */}
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
               <div className="flex justify-between items-start">
                 <div>
                   <p className="text-sm font-bold text-gray-500 dark:text-gray-400">Absences critiques</p>
-
                   <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">
                     {stats.longAbsences}
                     <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
@@ -176,6 +209,67 @@ const AdminDashboard = ({ user, onLogout }) => {
             </div>
           </div>
         </section>
+        
+        {/* Critical Absences List - New section */}
+        {criticalAbsenceStudents.length > 0 && (
+          <section className="mb-8">
+            <Card>
+              <CardHeader>
+                <CardTitle>Absences Critiques</CardTitle>
+                <CardDescription>Étudiants avec plus de 20 heures d'absence non justifiées</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead className="bg-gray-50 dark:bg-gray-800">
+                      <tr>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                          Étudiant
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                          Matricule
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                          Heures
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700">
+                      {criticalAbsenceStudents.map((item) => (
+                        <tr key={item.stagiaire.matricule} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <div className="flex-shrink-0 h-10 w-10">
+                                {item.stagiaire.photo ? (
+                                  <img className="h-10 w-10 rounded-full" src={item.stagiaire.photo.startsWith('http') ? item.stagiaire.photo : `http://localhost:8000/storage/${item.stagiaire.photo}`} alt="" />
+                                ) : (
+                                  <Avatar name={item.stagiaire.nom + ' ' + item.stagiaire.prenom} size="md" />
+                                )}
+                              </div>
+                              <div className="ml-4">
+                                <div className="text-sm font-medium text-gray-900 dark:text-white">
+                                  {item.stagiaire.nom} {item.stagiaire.prenom}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-500 dark:text-gray-400">{item.stagiaire.matricule}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <Badge variant="danger">
+                              {item.totalHours} heures
+                            </Badge>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          </section>
+        )}
         
         {/* Admin level */}
         <section className="mb-8">

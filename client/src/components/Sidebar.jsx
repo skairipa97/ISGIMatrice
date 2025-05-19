@@ -49,7 +49,15 @@ function Sidebar({ user, onLogout, isOpen, onClose }) {
     ];
 
     const roleSpecificItems = {
-      stagiaire: [],
+      stagiaire: [
+        {
+          name: "Justification",
+        path: "/stagiaire/absences-justification",
+        icon: (
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>)}
+      ],
       formateur: [
         {
           name: "Groupes",
@@ -96,22 +104,47 @@ function Sidebar({ user, onLogout, isOpen, onClose }) {
 
   const getSupportItems = () => {
     const commonSupportItems = [];
-    if (user?.role === 'stagiaire') {
+    const role = localStorage.getItem('role');
+  
+    if (role === 'stagiaire') {
       commonSupportItems.push({
         name: "Justification",
         path: "/stagiaire/absences-justification",
         icon: (
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+            />
+          </svg>
+        )
+      });
+    } else if (role === 'formateur') {
+      commonSupportItems.push({
+        name: "Groupes",
+        path: "/groupes",
+        icon: (
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+            />
           </svg>
         )
       });
     }
+  
     return commonSupportItems;
   };
-
+  
+  const role = localStorage.getItem('role');
   const menuItems = getNavigationItems();
   const supportItems = getSupportItems();
+  console.log(supportItems)
 
   return (
     <>
@@ -165,7 +198,14 @@ function Sidebar({ user, onLogout, isOpen, onClose }) {
 
             {supportItems.length > 0 && (
               <>
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider dark:text-gray-400 mt-8 mb-4">Support</p>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider dark:text-gray-400 mt-8 mb-4">
+  {role === 'stagiaire'
+    ? 'Support'
+    : role === 'formateur'
+    ? 'Administratif'
+    : ''}
+</p>
+
                 <nav className="space-y-1">
                   {supportItems.map((item) => (
                     <Link key={item.path} to={item.path} className="group flex items-center px-3 py-2.5 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200" onClick={handleLinkClick}>

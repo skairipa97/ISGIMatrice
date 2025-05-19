@@ -2,47 +2,47 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Group;
+use App\Models\Groupe;
+use App\Models\stagiaire;
 use Illuminate\Http\Request;
 
 class GroupController extends Controller
 {
-    // Liste tous les groupes
-    public function index()
-    {
-        return response()->json(Group::all());
-    }
-
-    // Affiche un groupe spécifique
     public function show($id)
     {
-        $group = Group::findOrFail($id);
-        return response()->json($group);
+        try {
+            $group = Groupe::find($id);
+            
+            if (!$group) {
+                return response()->json(['message' => 'Groupe non trouvé'], 404);
+            }
+
+            return response()->json($group);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Erreur serveur',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
-    // Récupère les stagiaires d'un groupe
     public function stagiaires($groupId)
     {
-        $group = Group::with('stagiaires')->findOrFail($groupId);
-        return response()->json($group->stagiaires);
-    }
+        try {
+            $group = Groupe::with('stagiaires')->find($groupId);
 
-    
-    public function groups($formateurId)
-        {
-            $affectations = Affectation::with(['group', 'module'])
-                ->where('formateur_id', $formateurId)
-                ->get()
-                ->map(function ($affectation) {
-                    return [
-                        'id' => $affectation->group->id,
-                        'code' => $affectation->group->code,
-                        'name' => $affectation->group->name,
-                        'module' => $affectation->module->name,
-                        'module_id' => $affectation->module->id
-                    ];
-                });
+            if (!$group) {
+                return response()->json(['message' => 'Groupe non trouvé'], 404);
+            }
 
-            return response()->json($affectations);
+            return response()->json($group->stagiaires);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Erreur serveur',
+                'error' => $e->getMessage()
+            ], 500);
         }
+    }
 }

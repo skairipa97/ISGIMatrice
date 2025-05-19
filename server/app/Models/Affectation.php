@@ -15,7 +15,7 @@ class Affectation extends Model
 
     public function groupe()
     {
-        return $this->belongsTo(Groupe::class);
+        return $this->belongsTo(Groupe::class , 'group_id');
     }
 
     public function module()

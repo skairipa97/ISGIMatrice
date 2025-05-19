@@ -1,94 +1,90 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import axios from 'axios'
 import { useParams } from 'react-router-dom';
 import DashboardLayout from '../../layouts/DashboardLayout'
 import { Card, CardHeader, CardContent, CardTitle, CardDescription, CardFooter } from '../../components/ui/Card'
 import { Check, X } from 'lucide-react'
 
-function ListeDesAbsences() {
+function ListeDesAbsences({ onLogout }) {
   const { groupId } = useParams();
   const [group, setGroup] = useState(null);
-  // État pour la date (défaut = aujourd'hui)
+  const [moduleId, setModuleId] = useState(null);
+  const [formateurId, setFormateurId] = useState(null);
   const today = new Date()
   const dateFormatted = today.toISOString().split('T')[0]
   const [date, setDate] = useState(dateFormatted)
-  
-  // État pour le mode présentiel
   const [isPresentiel, setIsPresentiel] = useState(true)
-  
-  // État pour le lieu/salle
   const [lieu, setLieu] = useState('')
-  
-  // État pour la liste des stagiaires
   const [stagiaires, setStagiaires] = useState([])
-  
-  // État pour indiquer le chargement
   const [loading, setLoading] = useState(true)
-  
-  // État pour les messages d'erreur
   const [error, setError] = useState('')
-  
-  // État pour le statut de sauvegarde
   const [saveStatus, setSaveStatus] = useState('')
-  
-useEffect(() => {
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      setError('');
+  const errorRef = useRef(null); 
 
-      const token = localStorage.getItem('token');
-      const headers = {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      };
-
-      // 1. Fetch group details if groupId exists
-      if (groupId) {
-        const groupResponse = await axios.get(
-          `http://votre-domaine-laravel/api/groups/${groupId}`, 
-          { headers }
-        );
-        setGroup(groupResponse.data);
-      }
-
-      // 2. Fetch students for the group (or all students if no group specified)
-      const stagiairesResponse = await axios.get(
-        groupId 
-          ? `http://votre-domaine-laravel/api/groups/${groupId}/stagiaires`
-          : 'http://votre-domaine-laravel/api/stagiaires',
-        { headers }
-      );
-
-      // Add default absence status to each stagiaire
-      const stagiairesWithAbsences = stagiairesResponse.data.map(stagiaire => ({
-        ...stagiaire,
-        absences: { s1: false, s2: false, s3: false, s4: false }
-      }));
-
-      setStagiaires(stagiairesWithAbsences);
-
-    } catch (err) {
-      console.error('Error fetching data:', err);
-      
-      // Handle different error cases
-      if (err.response?.status === 401) {
-        setError('Session expirée - Veuillez vous reconnecter');
-        // Optionally redirect to login
-      } else if (err.response?.status === 404) {
-        setError('Groupe non trouvé');
-      } else {
-        setError('Erreur lors du chargement des données');
-      }
-      
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    if (error && errorRef.current) {
+      errorRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      });
     }
-  };
+  }, [error]);
 
-  fetchData();
-}, [groupId]);
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError('');
+  
+        const token = localStorage.getItem('token');
+        const headers = {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        };
+  
+        // Fetch group
+        const groupResponse = await axios.get(
+          `http://localhost:8000/api/groupes/${groupId}`, 
+          { headers }
+        ).catch(err => {
+          throw new Error(err.response?.data?.message || 'Erreur lors du chargement du groupe');
+        });
+  
+        setGroup(groupResponse.data);
+        
+        // Here we would typically get the current module and formateur
+        // This is placeholder data - you should fetch this from API
+        setModuleId(groupResponse.data.current_module_id || 1);
+        setFormateurId(localStorage.getItem('user_id') || 1);
+  
+        // Fetch stagiaires
+        const stagiairesResponse = await axios.get(
+          `http://localhost:8000/api/groupes/${groupId}/stagiaires`,
+          { headers }
+        ).catch(err => {
+          throw new Error(err.response?.data?.message || 'Erreur lors du chargement des stagiaires');
+        });
+  
+        // Make sure each stagiaire has an ID property
+        const processedStagiaires = stagiairesResponse.data.map(s => ({
+          ...s,
+          id: s.id || s._id || s.stagiaire_id || s.matricule, // Ensure there's always an ID
+          absence: { s1: false, s2: false, s3: false, s4: false } // Default to not absent
+        }));
+        
+        setStagiaires(processedStagiaires);
+        console.log('Processed stagiaires:', processedStagiaires);
+  
+      } catch (err) {
+        setError(err.message);
+        console.error('Erreur:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+  
+    fetchData();
+  }, [groupId]);
   
   // Gestion du changement de mode présentiel/distanciel
   const handlePresentielChange = (e) => {
@@ -109,9 +105,9 @@ useEffect(() => {
       if (stagiaire.id === stagiaireId) {
         return {
           ...stagiaire,
-          absences: {
-            ...stagiaire.absences,
-            [session]: !stagiaire.absences[session]
+          absence: {
+            ...stagiaire.absence,
+            [session]: !stagiaire.absence[session]
           }
         }
       }
@@ -119,63 +115,96 @@ useEffect(() => {
     }))
   }
   
-  // Gestion de la soumission du formulaire
-  const handleSubmit = async (e) => {
-    e.preventDefault()
+  // Calculer la durée des séances (2,5H par séance) basée sur les séances avec des absences
+  const calculateTotalSessionsWithAttendance = () => {
+    const seances = ['s1', 's2', 's3', 's4'];
+    const sessionsWithAttendance = new Set();
     
-    // Validation du lieu si en présentiel
-    if (isPresentiel && !lieu.trim()) {
-      setError('Veuillez saisir le numéro ou le nom de la salle')
-      return
-    }
-    
-    try {
-      setSaveStatus('saving')
-      
-      // Construction des données à envoyer
-      const absenceData = {
-        date,
-        mode: isPresentiel ? 'présentiel' : 'distanciel',
-        lieu,
-        absences: stagiaires.map(stagiaire => ({
-          matricule: stagiaire.matricule,
-          nom: `${stagiaire.nom} ${stagiaire.prenom}`,
-          s1: stagiaire.absences.s1,
-          s2: stagiaire.absences.s2,
-          s3: stagiaire.absences.s3,
-          s4: stagiaire.absences.s4
-        }))
+    // Pour chaque séance, vérifier s'il y a au moins un stagiaire marqué absent
+    for (const seance of seances) {
+      if (stagiaires.some(s => s.absence[seance])) {
+        sessionsWithAttendance.add(seance);
       }
-      
-      // Simulation d'un appel API pour sauvegarder
-      console.log('Données à envoyer:', absenceData)
-      
-      // Ici vous feriez normalement un appel API pour enregistrer les données
-      /*
-      await axios.post('http://localhost:8000/api/absences', absenceData, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      })
-      */
-      
-      // Simulation d'un délai de sauvegarde
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      setSaveStatus('success')
-      setError('')
-      
-      // Réinitialiser le statut après 3 secondes
-      setTimeout(() => {
-        setSaveStatus('')
-      }, 3000)
-      
-    } catch (err) {
-      console.error('Erreur lors de l\'enregistrement:', err)
-      setError('Erreur lors de l\'enregistrement des absences')
-      setSaveStatus('error')
     }
+    
+    return sessionsWithAttendance.size;
   }
+  
+  // Calculer la durée totale basée sur le nombre de séances avec des absences
+  const calculateDuration = () => {
+    const sessionCount = calculateTotalSessionsWithAttendance();
+    return sessionCount * 2.5; // Chaque séance dure 2.5 heures
+  }
+  
+  
+  const handleSubmit = async (e) => {
+  e.preventDefault();
+  
+  // Validation du lieu si en présentiel
+  if (isPresentiel && !lieu.trim()) {
+    setError('Veuillez saisir le numéro ou le nom de la salle');
+    return;
+  }
+  
+  try {
+    setSaveStatus('saving');
+    const token = localStorage.getItem('token');
+    
+    // Préparation des données
+    const seanceData = {
+      date,
+      type: isPresentiel ? 'presentiel' : 'a distance',
+      lieu,
+      duree: calculateDuration(),
+      groupe_id: parseInt(groupId),
+      module_id: moduleId,
+      formateur_id: formateurId,
+      nombre_sessions: calculateTotalSessionsWithAttendance()
+    };
+
+    // Préparation des absences (uniquement les stagiaires absents)
+    const absencesData = stagiaires.flatMap(stagiaire => 
+      ['s1', 's2', 's3', 's4']
+        .filter(session => stagiaire.absence[session])
+        .map(session => ({
+          stagiaire_matricule: stagiaire.matricule,
+          session
+        }))
+    );
+
+    // Envoi des données
+    const response = await axios.post('http://localhost:8000/api/seances', {
+      seance: seanceData,
+      absences: absencesData
+    }, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    // Affichage du message de succès
+    setSaveStatus('success');
+    setError('');
+    
+    // Redirection après 2 secondes
+    setTimeout(() => {
+      window.location.href = '/groupes';
+    }, 2000);
+    
+  } catch (err) {
+    console.error('Erreur:', err.response?.data);
+    
+    // Gestion spécifique de l'erreur de séance dupliquée
+    if (err.response?.status === 422 && err.response?.data?.message) {
+      setError(err.response.data.message);
+    } else {
+      setError(err.response?.data?.message || 'Erreur lors de l\'enregistrement');
+    }
+    
+    setSaveStatus('error');
+  }
+};
   
   if (loading) {
     return (
@@ -190,19 +219,27 @@ useEffect(() => {
   }
   
   return (
-    <DashboardLayout>
+    <DashboardLayout onLogout={onLogout}>
       <div className="container px-4 py-6 mx-auto">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Liste des Absences</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+          Feuille de Présence - {group?.nom || 'Groupe'}
+        </h1>
         
-        {error && (
-          <div className="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded dark:bg-red-900/30 dark:text-red-400 dark:border-red-800">
+         {/* Error message with ref */}
+         {error && (
+          <div ref={errorRef} className="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded dark:bg-red-900/30 dark:text-red-400 dark:border-red-800">
             {error}
+            {error.includes('déjà programmé') && (
+              <div className="mt-2 text-sm">
+                Vous pouvez seulement marquer des absences pour d'autres sessions (S3, S4) si elles n'ont pas déjà été enregistrées.
+              </div>
+            )}
           </div>
         )}
         
         {saveStatus === 'success' && (
           <div className="mb-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded dark:bg-green-900/30 dark:text-green-400 dark:border-green-800">
-            Absences enregistrées avec succès!
+            Enregistré avec succès! Redirection en cours...
           </div>
         )}
         
@@ -261,6 +298,7 @@ useEffect(() => {
                       value={lieu}
                       onChange={(e) => setLieu(e.target.value)}
                       placeholder="Numéro ou nom de la salle"
+                      required={isPresentiel}
                     />
                   ) : (
                     <input
@@ -279,7 +317,9 @@ useEffect(() => {
           <Card>
             <CardHeader>
               <CardTitle>Gestion des absences</CardTitle>
-              <CardDescription>Marquez les absences pour chaque session</CardDescription>
+              <CardDescription>
+                Marquez les absences pour chaque session (S1-S4, chacune de 2h30)
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="overflow-x-auto">
@@ -293,22 +333,22 @@ useEffect(() => {
                         Nom Complet
                       </th>
                       <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        S1
+                        S1 (2h30)
                       </th>
                       <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        S2
+                        S2 (2h30)
                       </th>
                       <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        S3
+                        S3 (2h30)
                       </th>
                       <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                        S4
+                        S4 (2h30)
                       </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
                     {stagiaires.map((stagiaire) => (
-                      <tr key={stagiaire.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/60">
+                      <tr key={stagiaire.matricule} className="hover:bg-gray-50 dark:hover:bg-gray-800/60">
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                           {stagiaire.matricule}
                         </td>
@@ -319,52 +359,52 @@ useEffect(() => {
                           <button
                             type="button"
                             className={`inline-flex items-center justify-center h-8 w-8 rounded-full ${
-                              stagiaire.absences.s1 
-                                ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' 
+                              stagiaire.absence.s1 
+                                ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'
                                 : 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
                             }`}
                             onClick={() => handleAbsenceChange(stagiaire.id, 's1')}
                           >
-                            {stagiaire.absences.s1 ? <X size={16} /> : <Check size={16} />}
+                            {stagiaire.absence.s1 ? <X size={16} /> : <Check size={16} />}
                           </button>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-center">
                           <button
                             type="button"
                             className={`inline-flex items-center justify-center h-8 w-8 rounded-full ${
-                              stagiaire.absences.s2 
-                                ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' 
+                              stagiaire.absence.s2 
+                                ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'
                                 : 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
                             }`}
                             onClick={() => handleAbsenceChange(stagiaire.id, 's2')}
                           >
-                            {stagiaire.absences.s2 ? <X size={16} /> : <Check size={16} />}
+                            {stagiaire.absence.s2 ? <X size={16} /> : <Check size={16} />}
                           </button>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-center">
                           <button
                             type="button"
                             className={`inline-flex items-center justify-center h-8 w-8 rounded-full ${
-                              stagiaire.absences.s3 
-                                ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' 
+                              stagiaire.absence.s3 
+                                ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'
                                 : 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
                             }`}
                             onClick={() => handleAbsenceChange(stagiaire.id, 's3')}
                           >
-                            {stagiaire.absences.s3 ? <X size={16} /> : <Check size={16} />}
+                            {stagiaire.absence.s3 ? <X size={16} /> : <Check size={16} />}
                           </button>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-center">
                           <button
                             type="button"
                             className={`inline-flex items-center justify-center h-8 w-8 rounded-full ${
-                              stagiaire.absences.s4 
-                                ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' 
+                              stagiaire.absence.s4 
+                                ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'
                                 : 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
                             }`}
                             onClick={() => handleAbsenceChange(stagiaire.id, 's4')}
                           >
-                            {stagiaire.absences.s4 ? <X size={16} /> : <Check size={16} />}
+                            {stagiaire.absence.s4 ? <X size={16} /> : <Check size={16} />}
                           </button>
                         </td>
                       </tr>
@@ -372,16 +412,22 @@ useEffect(() => {
                   </tbody>
                 </table>
               </div>
+              
+              <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-md">
+                <p className="text-sm text-gray-700 dark:text-gray-300">
+                  <strong>Résumé:</strong> {calculateTotalSessionsWithAttendance()} séances avec absences, durée totale: {calculateDuration()} heures
+                </p>
+              </div>
             </CardContent>
-            <CardFooter className="flex justify-end space-x-4">
+            <CardFooter className="flex justify-end space-x-4 dark:bg-gray-800">
               <button
                 type="button"
                 className="px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
                 onClick={() => {
-                  // Réinitialiser toutes les absences
+                  // Réinitialiser toutes les absences (tout le monde présent)
                   setStagiaires(stagiaires.map(stagiaire => ({
                     ...stagiaire,
-                    absences: { s1: false, s2: false, s3: false, s4: false }
+                    absence: { s1: false, s2: false, s3: false, s4: false }
                   })))
                 }}
               >
@@ -397,7 +443,7 @@ useEffect(() => {
                 disabled={saveStatus === 'saving'}
               >
                 {saveStatus === 'saving' ? (
-                  <span className="flex items-center">
+                  <span className="flex items-center ">
                     <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>

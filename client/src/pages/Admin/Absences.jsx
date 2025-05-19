@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import axios from 'axios';
 import DashboardLayout from '../../layouts/DashboardLayout';
 import { 
   Card, 
@@ -22,75 +23,94 @@ import Badge from '../../components/ui/Badge';
 
 export default function AdminAbsences({ user, onLogout }) {
   const [filters, setFilters] = useState({
+    search: '',
     date: '',
     groupe: '',
     filiere: '',
     statut: '',
-    search: '',
-    formateur: '' // Nouveau champ pour la recherche par formateur
+    formateur: ''
   });
+  const [absences, setAbsences] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [pagination, setPagination] = useState({
+    current_page: 1,
+    last_page: 1,
+    per_page: 15,
+    total: 0
+  });
+  const tableStyle = {
+    backgroundColor: '#f3f4f6', // Gris clair
+    width: '100%',
+    borderCollapse: 'collapse',
+  };
 
-  const [absences, setAbsences] = useState([
-    {
-      id: 1,
-      student_id: 101,
-      student_name: "Jean Dupont",
-      date: "2023-05-15",
-      groupe: "Groupe A",
-      filiere: "Informatique",
-      status: "unjustified",
-      base_note: 15.5,
-      current_note: 15.0,
-      formateur: "Pierre Martin"
-    },
-    {
-      id: 2,
-      student_id: 102,
-      student_name: "Marie Martin",
-      date: "2023-05-16",
-      groupe: "Groupe B",
-      filiere: "Design",
-      status: "justified",
-      base_note: 18.0,
-      current_note: 18.0,
-      formateur: "Sophie Dupont"
-    },
-    {
-      id: 3,
-      student_id: 103,
-      student_name: "Pierre Durand",
-      date: "2023-05-17",
-      groupe: "Groupe A",
-      filiere: "Informatique",
-      status: "pending",
-      base_note: 12.0,
-      current_note: 12.0,
-      formateur: "Pierre Martin"
-    }
-  ]);
+  // Fetch absences when component mounts or filters change
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const token = localStorage.getItem('token');
+        const response = await axios.get('http://localhost:8000/api/admin/absences', {
+          params: {
+            ...filters,
+            page: pagination.current_page
+          },
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        setAbsences(response.data.absences);
+        setPagination({
+          current_page: response.data.pagination.current_page,
+          last_page: response.data.pagination.last_page,
+          per_page: response.data.pagination.per_page,
+          total: response.data.pagination.total
+        });
+      } catch (err) {
+        console.error('Error fetching absences:', err);
+        setError(err.response?.data?.message || 'Failed to fetch absences');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [filters, pagination.current_page]);
 
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
-    setFilters(prev => ({ ...prev, [name]: value }));
+    setFilters(prev => ({ 
+      ...prev, 
+      [name]: value 
+    }));
   };
 
-  const handleSearch = () => {
-    // Logique de filtrage sera appliquée automatiquement via le rendering
-    console.log("Recherche lancée avec les critères:", filters);
+  const handleStatusChange = (value) => {
+    setFilters(prev => ({ 
+      ...prev, 
+      statut: value 
+    }));
   };
 
-  // Filtrer les absences selon les critères
-  const filteredAbsences = absences.filter(absence => {
-    return (
-      absence.student_name.toLowerCase().includes(filters.search.toLowerCase()) &&
-      absence.formateur.toLowerCase().includes(filters.formateur.toLowerCase()) &&
-      (filters.date === '' || absence.date === filters.date) &&
-      (filters.groupe === '' || absence.groupe.includes(filters.groupe)) &&
-      (filters.filiere === '' || absence.filiere.includes(filters.filiere)) &&
-      (filters.statut === '' || absence.status === filters.statut)
-    );
-  });
+  const handlePageChange = (newPage) => {
+    setPagination(prev => ({
+      ...prev,
+      current_page: newPage
+    }));
+  };
 
+  const handleResetFilters = () => {
+    setFilters({
+      search: '',
+      date: '',
+      groupe: '',
+      filiere: '',
+      statut: '',
+      formateur: ''
+    });
+  };
+ 
   return (
     <DashboardLayout user={user} onLogout={onLogout}>
       <div className="space-y-6">
@@ -108,130 +128,143 @@ export default function AdminAbsences({ user, onLogout }) {
           </div>
         </div>
 
-        {/* Filters Card avec nouveau champ formateur */}
+        {/* Filters Card */}
         <Card>
           <CardHeader>
-            <CardTitle>Filtres de recherche</CardTitle>
+            <div className="flex justify-between items-center">
+              <CardTitle>Filtres de recherche</CardTitle>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleResetFilters}
+              >
+                Réinitialiser
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+            <div className="grid grid-cols-1 gap-4">
               <Input
                 type="text"
                 name="search"
-                placeholder="Nom stagiaire"
+                placeholder="Recherche (nom, groupe, filière, formateur, date...)"
                 value={filters.search}
                 onChange={handleFilterChange}
               />
-              <Input
-                type="text"
-                name="formateur"
-                placeholder="Nom formateur"
-                value={filters.formateur}
-                onChange={handleFilterChange}
-              />
-              <Input 
-                type="date" 
-                name="date" 
-                value={filters.date} 
-                onChange={handleFilterChange} 
-              />
-              <Input
-                type="text"
-                name="groupe"
-                placeholder="Groupe"
-                value={filters.groupe}
-                onChange={handleFilterChange}
-              />
-              <Input
-                type="text"
-                name="filiere"
-                placeholder="Filière"
-                value={filters.filiere}
-                onChange={handleFilterChange}
-              />
-              <div className="flex gap-2">
-                <Select
-                  value={filters.statut}
-                  onValueChange={(value) => setFilters(prev => ({ ...prev, statut: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Tous statuts" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">Tous statuts</SelectItem>
-                    <SelectItem value="justified">Justifié</SelectItem>
-                    <SelectItem value="unjustified">Non justifié</SelectItem>
-                    <SelectItem value="pending">En attente</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button onClick={handleSearch}>Rechercher</Button>
-              </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Tableau avec colonnes réorganisées */}
-        <Card>
-          <CardHeader>
+        {/* Results Card */}
+          <Card className="bg-gray-100 dark:bg-gray-800"> {/* Add bg color to Card */}
+            <CardHeader className="bg-gray-100 dark:bg-gray-800">
             <CardTitle>Liste des absences</CardTitle>
             <CardDescription>
-              {filteredAbsences.length} absences trouvées
+              {loading ? 'Chargement...' : `${pagination.total} absences trouvées`}
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nom stagiaire</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Groupe</TableHead>
-                    <TableHead>Filière</TableHead>
-                    <TableHead>Formateur</TableHead> {/* Déplacé avant Statut */}
-                    <TableHead>Statut</TableHead>
-                    <TableHead>Note/20</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredAbsences.map(absence => (
-                    <TableRow key={absence.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
-                      <TableCell>
-                        <span className="text-indigo-600 hover:underline dark:text-indigo-400">
-                          {absence.student_name}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        {new Date(absence.date).toLocaleDateString('fr-FR')}
-                      </TableCell>
-                      <TableCell>{absence.groupe}</TableCell>
-                      <TableCell>{absence.filiere}</TableCell>
-                      <TableCell>
-                        <span className="font-medium">
-                          {absence.formateur}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        {absence.status === 'justified' ? (
-                          <Badge variant="success">Justifiée</Badge>
-                        ) : absence.status === 'unjustified' ? (
-                          <Badge variant="destructive">Non justifiée</Badge>
-                        ) : (
-                          <Badge variant="warning">En attente</Badge>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center">
-                          <span>{absence.current_note.toFixed(1)}</span>
-                          {absence.status === 'unjustified' && (
-                            <span className="text-red-500 ml-1">(-0.5)</span>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+          <CardContent className="p-0">
+            {error ? (
+              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 p-4 rounded-lg">
+                {error}
+              </div>
+            ) : loading ? (
+              <div className="flex justify-center items-center h-64">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+              </div>
+            ) : absences.length === 0 ? (
+              <div className="text-center py-8 bg-gray-100 dark:bg-gray-800">
+                <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">Aucune absence trouvée</h3>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  {Object.values(filters).some(Boolean) 
+                    ? "Essayez de modifier vos critères de recherche" 
+                    : "Aucune absence enregistrée pour le moment"}
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="overflow-x-auto bg-gray-100 dark:bg-gray-800">
+                  <Table className="bg-gray-100 dark:bg-gray-800" style={tableStyle}>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Nom stagiaire</TableHead>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Groupe</TableHead>
+                        <TableHead>Filière</TableHead>
+                        <TableHead>Formateur</TableHead>
+                        <TableHead>Statut</TableHead>
+                        <TableHead>Note/20</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {absences.map(absence => (
+                        <TableRow key={absence.id} className="hover:bg-gray-200 dark:hover:bg-gray-700">
+                          <TableCell>
+                            <span className="text-indigo-600 hover:underline dark:text-indigo-400">
+                              {absence.student_name}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            {new Date(absence.date).toLocaleDateString('fr-FR')}
+                          </TableCell>
+                          <TableCell>{absence.groupe}</TableCell>
+                          <TableCell>{absence.filiere}</TableCell>
+                          <TableCell>
+                            <span className="font-medium">
+                              {absence.formateur}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            {absence.status === 'justified' ? (
+                              <Badge variant="success">Justifiée</Badge>
+                            ) : absence.status === 'unjustified' ? (
+                              <Badge variant="destructive">Non justifiée</Badge>
+                            ) : (
+                              <Badge variant="warning">En attente</Badge>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center">
+                              <span>{Number(absence.current_note).toFixed(1)}</span>
+                              {absence.status === 'unjustified' && (
+                                <span className="text-red-500 ml-1">(-0.5)</span>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+                {/* Pagination Controls */}
+                {pagination.last_page > 1 && (
+                  <div className="flex items-center justify-between mt-6 px-4">
+                    <div className="text-sm text-gray-500 dark:text-gray-400">
+                      Page {pagination.current_page} sur {pagination.last_page}
+                    </div>
+                    <div className="flex space-x-2">
+                      <Button
+                        variant="outline"
+                        disabled={pagination.current_page === 1}
+                        onClick={() => handlePageChange(pagination.current_page - 1)}
+                      >
+                        Précédent
+                      </Button>
+                      <Button
+                        variant="outline"
+                        disabled={pagination.current_page === pagination.last_page}
+                        onClick={() => handlePageChange(pagination.current_page + 1)}
+                      >
+                        Suivant
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
