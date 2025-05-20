@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 
 import Login from './pages/Login';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import Dashboard from './pages/Stagiaire/Dashboard';
 import Profile from './pages/Profile';
 import Settings from './pages/Settings';
@@ -147,6 +149,28 @@ const AppRoutes = () => {
             <Navigate to={getDashboardRoute(user.role)} replace />
           ) : (
             <Login login={login} />
+          )
+        }
+      />
+
+      <Route
+        path="/forgot-password"
+        element={
+          isAuthenticated ? (
+            <Navigate to={getDashboardRoute(user.role)} replace />
+          ) : (
+            <ForgotPassword />
+          )
+        }
+      />
+
+      <Route
+        path="/reset-password"
+        element={
+          isAuthenticated ? (
+            <Navigate to={getDashboardRoute(user.role)} replace />
+          ) : (
+            <ResetPassword />
           )
         }
       />

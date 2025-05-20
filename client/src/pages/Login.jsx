@@ -88,6 +88,11 @@ function Login({ login }) {
                     className="appearance-none block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white sm:text-sm"
                   />
                 </div>
+                <div className="text-sm text-right mt-1">
+                  <a href="/forgot-password" className="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300">
+                    Mot de passe oublié?
+                  </a>
+                </div>
               </div>
 
               <div>

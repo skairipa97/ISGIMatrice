@@ -8,10 +8,10 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
-class Stagiaire extends Model
+class Stagiaire extends Authenticatable
 {
     use HasFactory, HasApiTokens;
-
+    use Notifiable;
     protected $guarded = [];
 
     protected $primaryKey = 'matricule';

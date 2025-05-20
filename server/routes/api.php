@@ -8,6 +8,7 @@ use App\Http\Controllers\FormateurController;
 use App\Http\Controllers\SeanceController;
 use App\Http\Controllers\AbsenceController;
 use App\Http\Controllers\JustificationController;
+use App\Http\Controllers\PasswordResetController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -63,3 +64,7 @@ Route::middleware('auth:sanctum')->group(function () {
      Route::get('/justifications/pending', [JustificationController::class, 'pending']);
     Route::put('/justifications/{id}/status', [JustificationController::class, 'updateStatus']);
 });
+
+// Password Reset Routes
+Route::post('/forgot-password', [PasswordResetController::class, 'forgotPassword']);
+Route::post('/reset-password', [PasswordResetController::class, 'resetPassword'])->name('password.reset');
