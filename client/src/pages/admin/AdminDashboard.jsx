@@ -4,6 +4,7 @@ import DashboardLayout from '../../layouts/DashboardLayout';
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from '../../components/ui/Card';
 import Avatar from '../../components/ui/Avatar';
 import Badge from '../../components/ui/Badge';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 const AdminDashboard = ({ user, onLogout }) => {
   const [userData, setUserData] = useState(user);
@@ -15,6 +16,7 @@ const AdminDashboard = ({ user, onLogout }) => {
     adminLevel: user?.isSuperAdmin ? 'super-admin' : 'admin' // Use prop data as fallback
   });
   const [criticalAbsenceStudents, setCriticalAbsenceStudents] = useState([]);
+  const [absencesByGroupData, setAbsencesByGroupData] = useState([]);
 
   useEffect(() => {
     const fetchAdminData = async () => {
@@ -56,6 +58,24 @@ const AdminDashboard = ({ user, onLogout }) => {
           adminLevel: user?.isSuperAdmin ? 'super-admin' : 'admin'
         }));
 
+        // New API call for absences by group over time
+        try {
+          const absencesByGroupResponse = await axios.get(
+            'http://localhost:8000/api/absences/by-group',
+            {
+              headers: { 'Authorization': `Bearer ${token}` }
+            }
+          );
+          
+          if (absencesByGroupResponse.data && Array.isArray(absencesByGroupResponse.data)) {
+            setAbsencesByGroupData(absencesByGroupResponse.data);
+          }
+        } catch (groupAbsencesError) {
+          console.error('Group absences data fetch error:', groupAbsencesError);
+          // En cas d'erreur, on utilise des données vides
+          setAbsencesByGroupData([]);
+        }
+
         setStats({
           pendingJustifications: pendingResponse.data.length || 0,
           longAbsences: criticalAbsences.length || 0,
@@ -82,6 +102,48 @@ const AdminDashboard = ({ user, onLogout }) => {
 
     fetchAdminData();
   }, [onLogout, user]);
+
+  // Function to transform the data for the chart if needed
+  const processChartData = () => {
+    // If we have real data, return it
+    if (absencesByGroupData.length > 0) {
+      return absencesByGroupData;
+    }
+    
+    // Otherwise, return sample data for demonstration purposes
+    return [
+      { date: '2025-05-01', 'Groupe A': 15, 'Groupe B': 12, 'Groupe C': 8 },
+      { date: '2025-05-02', 'Groupe A': 18, 'Groupe B': 10, 'Groupe C': 7 },
+      { date: '2025-05-03', 'Groupe A': 12, 'Groupe B': 15, 'Groupe C': 10 },
+      { date: '2025-05-04', 'Groupe A': 10, 'Groupe B': 8, 'Groupe C': 12 },
+      { date: '2025-05-05', 'Groupe A': 8, 'Groupe B': 9, 'Groupe C': 15 },
+      { date: '2025-05-06', 'Groupe A': 7, 'Groupe B': 11, 'Groupe C': 13 },
+      { date: '2025-05-07', 'Groupe A': 9, 'Groupe B': 13, 'Groupe C': 11 },
+    ];
+  };
+
+  // Function to dynamically generate lines for each group
+  const renderLines = () => {
+    const chartData = processChartData();
+    if (chartData.length === 0) return null;
+    
+    // Get all group names from the first data item
+    const groupNames = Object.keys(chartData[0]).filter(key => key !== 'date');
+    
+    // Array of colors for different lines
+    const colors = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#0088FE', '#00C49F'];
+    
+    return groupNames.map((group, index) => (
+      <Line 
+        key={group}
+        type="monotone"
+        dataKey={group}
+        stroke={colors[index % colors.length]}
+        strokeWidth={2}
+        activeDot={{ r: 6 }}
+      />
+    ));
+  };
 
   const handleLogout = async () => {
     try {
@@ -208,6 +270,52 @@ const AdminDashboard = ({ user, onLogout }) => {
               </div>
             </div>
           </div>
+        </section>
+
+        {/* Nouveau graphique d'absences par groupe */}
+        <section className="mb-8">
+          <Card>
+            <CardHeader>
+              <CardTitle>Évolution des Absences par Groupe</CardTitle>
+              <CardDescription>Suivi des absences par groupe au fil du temps</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart
+                    data={processChartData()}
+                    margin={{ top: 5, right: 30, left: 20, bottom: 25 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis 
+                      dataKey="date" 
+                      label={{ value: 'Date', position: 'insideBottomRight', offset: -10 }}
+                      tick={{ fontSize: 12 }}
+                      angle={-45}
+                      textAnchor="end"
+                    />
+                    <YAxis 
+                      label={{ 
+                        value: 'Nombre d\'absences', angle: -90, position: 'insideLeft',
+                        style: { textAnchor: 'middle' }
+                      }}
+                      tick={{ fontSize: 12 }}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                        border: '1px solid #ccc',
+                        borderRadius: '5px'
+                      }}
+                      labelStyle={{ fontWeight: 'bold', color: '#333' }}
+                    />
+                    <Legend verticalAlign="top" height={36} />
+                    {renderLines()}
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
         </section>
         
         {/* Critical Absences List - New section */}
