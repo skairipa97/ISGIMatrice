@@ -33,14 +33,18 @@ class PasswordResetController extends Controller
                 $stagiaire->remember_token_expires_at = now()->addHours(1);
                 $stagiaire->save();
 
-                $url = env('FRONTEND_URL') . "/reset-password?token=" . $token;
+                $url = env('FRONTEND_URL') . "/reset-password?token=" . $token . "&email=" . urlencode($stagiaire->email);
                 Mail::send('emails.reset-password', ['url' => $url], function ($message) use ($stagiaire) {
                     $message->to($stagiaire->email)->subject('Reset Password');
                 });
 
+                return response()->json([
+                    'message' => 'Reset link sent to your email',
+                    'reset_url' => $url
+                ], 200);
             }
 
-             return response()->json(['message' => 'Reset link sent to your email if we have it in our database'], 200);
+             return response()->json(['message' => 'Reset link sent to your email'], 200);
         } catch (\Exception $e) {
             return response()->json(['message' => 'An error occurred. Please try again.'], 500);
         }

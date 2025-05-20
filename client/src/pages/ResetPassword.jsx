@@ -16,6 +16,7 @@ function ResetPassword() {
   const [loading, setLoading] = useState(false);
   const [tokenValid, setTokenValid] = useState(null);
   const [checkingToken, setCheckingToken] = useState(true);
+  const [resetUrl, setResetUrl] = useState('');
 
   useEffect(() => {
     const validateToken = async () => {
@@ -28,6 +29,7 @@ function ResetPassword() {
       try {
         const response = await axios.post('http://localhost:8000/api/check-token', { token });
         setTokenValid(response.data);
+        setResetUrl(response.data.reset_url);
       } catch (err) {
         console.error('Token validation error:', err);
         setTokenValid(false);
@@ -125,7 +127,7 @@ function ResetPassword() {
     );
   }
 
-  if (!tokenValid) {
+  if (!tokenValid || tokenValid.valid !== true) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <motion.div
@@ -223,6 +225,12 @@ function ResetPassword() {
             </button>
           </div>
         </form>
+
+        {resetUrl && (
+          <button onClick={() => window.location.href = resetUrl}>
+            Go to Reset Form
+          </button>
+        )}
       </motion.div>
     </div>
   );

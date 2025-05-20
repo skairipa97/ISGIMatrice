@@ -14,6 +14,7 @@ function ListeDesAbsences({ user, onLogout }) {
   const dateFormatted = today.toISOString().split('T')[0]
   const [date, setDate] = useState(dateFormatted)
   const [isPresentiel, setIsPresentiel] = useState(true)
+  const [isMatinee, setIsMatinee] = useState(true) // New state for Matinée/Après-midi switch
   const [lieu, setLieu] = useState('')
   const [stagiaires, setStagiaires] = useState([])
   const [loading, setLoading] = useState(true)
@@ -98,9 +99,38 @@ function ListeDesAbsences({ user, onLogout }) {
       setLieu('')
     }
   }
+
+  // Gestion du changement de mode matinée/après-midi
+  const handleMatineeChange = (e) => {
+    const isChecked = e.target.checked
+    setIsMatinee(isChecked)
+    
+    // Réinitialiser les absences pour les séances qui ne sont plus disponibles
+    setStagiaires(stagiaires.map(stagiaire => {
+      return {
+        ...stagiaire,
+        absence: {
+          ...stagiaire.absence,
+          // Si matinée, réinitialiser s3 et s4; si après-midi, réinitialiser s1 et s2
+          s1: isChecked ? stagiaire.absence.s1 : false,
+          s2: isChecked ? stagiaire.absence.s2 : false,
+          s3: isChecked ? false : stagiaire.absence.s3,
+          s4: isChecked ? false : stagiaire.absence.s4
+        }
+      }
+    }))
+  }
   
   // Gestion du marquage des absences
   const handleAbsenceChange = (stagiaireId, session) => {
+    // Vérifier si la session est active selon le mode matinée/après-midi
+    if (
+      (isMatinee && (session === 's3' || session === 's4')) ||
+      (!isMatinee && (session === 's1' || session === 's2'))
+    ) {
+      return; // Ne rien faire si la session est désactivée
+    }
+    
     setStagiaires(stagiaires.map(stagiaire => {
       if (stagiaire.id === stagiaireId) {
         return {
@@ -117,10 +147,10 @@ function ListeDesAbsences({ user, onLogout }) {
   
   // Calculer la durée des séances (2,5H par séance) basée sur les séances avec des absences
   const calculateTotalSessionsWithAttendance = () => {
-    const seances = ['s1', 's2', 's3', 's4'];
+    const seances = isMatinee ? ['s1', 's2'] : ['s3', 's4']; // Filtrer selon le mode
     const sessionsWithAttendance = new Set();
     
-    // Pour chaque séance, vérifier s'il y a au moins un stagiaire marqué absent
+    // Pour chaque séance disponible selon le mode, vérifier s'il y a au moins un stagiaire marqué absent
     for (const seance of seances) {
       if (stagiaires.some(s => s.absence[seance])) {
         sessionsWithAttendance.add(seance);
@@ -159,12 +189,14 @@ function ListeDesAbsences({ user, onLogout }) {
       groupe_id: parseInt(groupId),
       module_id: moduleId,
       formateur_id: formateurId,
-      nombre_sessions: calculateTotalSessionsWithAttendance()
+      nombre_sessions: calculateTotalSessionsWithAttendance(),
+      periode: isMatinee ? 'matinee' : 'apres-midi' // Ajouter la période à la séance
     };
 
     // Préparation des absences (uniquement les stagiaires absents)
     const absencesData = stagiaires.flatMap(stagiaire => 
-      ['s1', 's2', 's3', 's4']
+      // Filtrer les séances selon le mode matinée/après-midi
+      (isMatinee ? ['s1', 's2'] : ['s3', 's4'])
         .filter(session => stagiaire.absence[session])
         .map(session => ({
           stagiaire_matricule: stagiaire.matricule,
@@ -250,7 +282,7 @@ function ListeDesAbsences({ user, onLogout }) {
               <CardDescription>Détails sur la séance du cours</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {/* Date de la séance */}
                 <div>
                   <label htmlFor="date" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -285,6 +317,7 @@ function ListeDesAbsences({ user, onLogout }) {
                   </p>
                 </div>
                 
+                
                 {/* Lieu de la séance */}
                 <div>
                   <label htmlFor="lieu" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -310,6 +343,25 @@ function ListeDesAbsences({ user, onLogout }) {
                     />
                   )}
                 </div>
+                
+                {/* Switch Matinée/Après-midi */}
+                <div>
+                  <div className="flex items-center mb-1">
+                    <input
+                      type="checkbox"
+                      id="matinee"
+                      className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                      checked={isMatinee}
+                      onChange={handleMatineeChange}
+                    />
+                    <label htmlFor="matinee" className="ml-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Matinée
+                    </label>
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {isMatinee ? 'Sessions S1 et S2 (matin)' : 'Sessions S3 et S4 (après-midi)'}
+                  </p>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -318,7 +370,7 @@ function ListeDesAbsences({ user, onLogout }) {
             <CardHeader>
               <CardTitle>Gestion des absences</CardTitle>
               <CardDescription>
-                Marquez les absences pour chaque session (S1-S4, chacune de 2h30)
+                Marquez les absences pour chaque session ({isMatinee ? 'S1-S2' : 'S3-S4'}, chacune de 2h30)
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -359,11 +411,14 @@ function ListeDesAbsences({ user, onLogout }) {
                           <button
                             type="button"
                             className={`inline-flex items-center justify-center h-8 w-8 rounded-full ${
-                              stagiaire.absence.s1 
-                                ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'
-                                : 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
+                              !isMatinee 
+                                ? 'bg-gray-200 text-gray-400 dark:bg-gray-700 dark:text-gray-500 cursor-not-allowed'
+                                : stagiaire.absence.s1 
+                                  ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'
+                                  : 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
                             }`}
                             onClick={() => handleAbsenceChange(stagiaire.id, 's1')}
+                            disabled={!isMatinee}
                           >
                             {stagiaire.absence.s1 ? <X size={16} /> : <Check size={16} />}
                           </button>
@@ -372,11 +427,14 @@ function ListeDesAbsences({ user, onLogout }) {
                           <button
                             type="button"
                             className={`inline-flex items-center justify-center h-8 w-8 rounded-full ${
-                              stagiaire.absence.s2 
-                                ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'
-                                : 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
+                              !isMatinee 
+                                ? 'bg-gray-200 text-gray-400 dark:bg-gray-700 dark:text-gray-500 cursor-not-allowed'
+                                : stagiaire.absence.s2 
+                                  ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'
+                                  : 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
                             }`}
                             onClick={() => handleAbsenceChange(stagiaire.id, 's2')}
+                            disabled={!isMatinee}
                           >
                             {stagiaire.absence.s2 ? <X size={16} /> : <Check size={16} />}
                           </button>
@@ -385,11 +443,14 @@ function ListeDesAbsences({ user, onLogout }) {
                           <button
                             type="button"
                             className={`inline-flex items-center justify-center h-8 w-8 rounded-full ${
-                              stagiaire.absence.s3 
-                                ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'
-                                : 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
+                              isMatinee 
+                                ? 'bg-gray-200 text-gray-400 dark:bg-gray-700 dark:text-gray-500 cursor-not-allowed'
+                                : stagiaire.absence.s3 
+                                  ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'
+                                  : 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
                             }`}
                             onClick={() => handleAbsenceChange(stagiaire.id, 's3')}
+                            disabled={isMatinee}
                           >
                             {stagiaire.absence.s3 ? <X size={16} /> : <Check size={16} />}
                           </button>
@@ -398,11 +459,14 @@ function ListeDesAbsences({ user, onLogout }) {
                           <button
                             type="button"
                             className={`inline-flex items-center justify-center h-8 w-8 rounded-full ${
-                              stagiaire.absence.s4 
-                                ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'
-                                : 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
+                              isMatinee 
+                                ? 'bg-gray-200 text-gray-400 dark:bg-gray-700 dark:text-gray-500 cursor-not-allowed'
+                                : stagiaire.absence.s4 
+                                  ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'
+                                  : 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
                             }`}
                             onClick={() => handleAbsenceChange(stagiaire.id, 's4')}
+                            disabled={isMatinee}
                           >
                             {stagiaire.absence.s4 ? <X size={16} /> : <Check size={16} />}
                           </button>
@@ -424,10 +488,16 @@ function ListeDesAbsences({ user, onLogout }) {
                 type="button"
                 className="px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
                 onClick={() => {
-                  // Réinitialiser toutes les absences (tout le monde présent)
+                  // Réinitialiser les absences selon le mode matinée/après-midi
                   setStagiaires(stagiaires.map(stagiaire => ({
                     ...stagiaire,
-                    absence: { s1: false, s2: false, s3: false, s4: false }
+                    absence: {
+                      ...stagiaire.absence,
+                      s1: isMatinee ? false : stagiaire.absence.s1,
+                      s2: isMatinee ? false : stagiaire.absence.s2,
+                      s3: isMatinee ? stagiaire.absence.s3 : false,
+                      s4: isMatinee ? stagiaire.absence.s4 : false
+                    }
                   })))
                 }}
               >
