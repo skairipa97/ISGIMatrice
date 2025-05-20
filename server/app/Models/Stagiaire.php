@@ -14,6 +14,21 @@ class Stagiaire extends Authenticatable
     use Notifiable;
     protected $guarded = [];
 
+    protected $fillable = [
+        'matricule',
+        'nom',
+        'prenom',
+        'email',
+        'genre',
+        'date_naissance',
+        'photo',
+        'adresse',
+        'groupe_id',
+        'remember_token',
+        'email_verified_at',
+        'remember_token_expires_at',
+    ];
+
     protected $primaryKey = 'matricule';
     protected $keyType = 'string';
     public $incrementing = false;

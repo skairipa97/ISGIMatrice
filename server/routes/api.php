@@ -30,7 +30,7 @@ Route::post('/login', [AuthController::class, 'login'])->name('login');
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'user']);
-    
+
     // Profile routes
     Route::put('/user/profile', [ProfileController::class, 'updateProfile']);
     Route::post('/user/profile/photo', [ProfileController::class, 'updatePhoto']);
@@ -68,3 +68,4 @@ Route::middleware('auth:sanctum')->group(function () {
 // Password Reset Routes
 Route::post('/forgot-password', [PasswordResetController::class, 'forgotPassword']);
 Route::post('/reset-password', [PasswordResetController::class, 'resetPassword'])->name('password.reset');
+Route::post('/check-token', [PasswordResetController::class, 'checkToken']);
