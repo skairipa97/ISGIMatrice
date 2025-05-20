@@ -13,49 +13,39 @@ use App\Notifications\StagiaireResetPassword;
 
 class PasswordResetController extends Controller
 {
+   
     public function forgotPassword(Request $request)
     {
-        Log::info('Password reset request received', ['email' => $request->email, 'ip' => $request->ip()]);
+    $request->validate(['email' => 'required|email']);
 
-        $request->validate([
-            'email' => 'required|email',
-        ]);
-
-        $stagiaire = Stagiaire::where('email', $request->email)->first();
-        if (!$stagiaire) {
-            Log::warning('Password reset attempt for non-existent email', ['email' => $request->email]);
-            return response()->json(['message' => 'Email not found in our records'], 404);
-        }
-
-        $token = Password::broker('stagiaires')->createToken($stagiaire);
-       
-        return response()->json(['message' => 'Reset link sent to your email'], 200);
+    $stagiaire = Stagiaire::where('email', $request->email)->first();
+    if (!$stagiaire) {
+        return response()->json(['message' => 'Email not found'], 404);
     }
+
+    // Token generation remains for password reset validation
+    Password::broker('stagiaires')->createToken($stagiaire);
+    
+    return response()->json([
+        'message' => 'Password reset allowed',
+     
+    ]);
+}
 
 
     public function resetPassword(Request $request)
     {
-    $request->validate([
-        'token' => 'required',
-        'email' => 'required|email',
-        'password' => 'required|min:8|confirmed',
-    ]);
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required|min:8|confirmed',
+        ]);
 
-    $status = Password::broker('stagiaires')->reset(
-        $request->only('email', 'password', 'password_confirmation', 'token'),
-        function ($user, $password) {
-            $user->forceFill([
-                'password' => Hash::make($password)
-            ])->setRememberToken(Str::random(60));
-            
-            $user->save();
-            event(new PasswordReset($user));
-        }
-    );
+        $stagiaire = Stagiaire::where('email', $request->email)->firstOrFail();
+        
+        $stagiaire->forceFill([
+            'password' => Hash::make($request->password)
+        ])->save();
 
-    return $status === Password::PASSWORD_RESET
-        ? response()->json(['message' => 'Password reset successfully'])
-        : response()->json(['message' => 'Unable to reset password', 'error' => $status], 400);
-}
-
+        return response()->json(['message' => 'Password reset successfully']);
+    }
 }

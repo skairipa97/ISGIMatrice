@@ -24,8 +24,10 @@ function ForgotPassword() {
 
     try {
       const response = await axios.post('http://localhost:8000/api/forgot-password', { email });
-      setMessage(response.data.message || 'Reset link sent to your email');
-      setTimeout(() => navigate('/login'), 3000);
+      // Change success message in ForgotPassword.jsx
+      setMessage('Proceed to reset your password');
+      // Redirect directly to reset page with email (no token needed in this flow)
+      setTimeout(() => navigate(`/reset-password?email=${encodeURIComponent(email)}`), 1000);
     } catch (err) {
       setError(err.response?.data?.message || 'An error occurred. Please try again.');
     } finally {

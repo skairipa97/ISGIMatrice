@@ -108,6 +108,7 @@ const AdminDashboard = ({ user, onLogout }) => {
     // If we have real data, return it
     if (absencesByGroupData.length > 0) {
       return absencesByGroupData;
+      console.log(absencesByGroupData)
     }
     
     // Otherwise, return sample data for demonstration purposes

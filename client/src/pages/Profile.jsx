@@ -90,8 +90,8 @@ console.log(user);
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!prenom?.trim() || !nom?.trim()) {
-      setMessage({ text: 'Le prénom et le nom sont requis', type: 'error' });
+    if (!photoFile) {
+      setMessage({ text: 'Please select a photo to upload', type: 'error' });
       return;
     }
     
@@ -105,105 +105,30 @@ console.log(user);
         return;
       }
 
-      // Créer les données du formulaire
-      const formData = new FormData();
-      formData.append('prenom', prenom.trim());
-      formData.append('nom', nom.trim());
-      if (photoFile) {
-        formData.append('photo', photoFile);
-      }
-      
-      // Log the FormData contents
-      console.log('Form data contents:');
-      for (let pair of formData.entries()) {
-        console.log(pair[0] + ': ' + pair[1]);
-      }
+      const photoData = new FormData();
+      photoData.append('photo', photoFile);
 
-      // Essayons d'abord sans la photo pour voir si ça fonctionne
-      const jsonData = {
-        prenom: prenom.trim(),
-        nom: nom.trim()
-      };
-
-      console.log('Sending data:', jsonData);
-
-      const response = await axios.put(
-        'http://localhost:8000/api/user/profile',
-        jsonData,
+      const response = await axios.post(
+        'http://localhost:8000/api/user/profile/photo',
+        photoData,
         {
           headers: {
             'Authorization': `Bearer ${token}`,
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
+            'Accept': 'application/json'
           }
         }
       );
-      
-      console.log('Profile update response:', response.data);
 
-      // Si la mise à jour du profil réussit et qu'il y a une photo, l'envoyer
-      if (photoFile) {
-        const photoData = new FormData();
-        photoData.append('photo', photoFile);
-
-        console.log('Sending photo...');
-        
-        const photoResponse = await axios.post(
-          'http://localhost:8000/api/user/profile/photo',
-          photoData,
-          {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Accept': 'application/json'
-            }
-          }
-        );
-
-        console.log('Photo upload response:', photoResponse.data);
-        const photoUrl = `http://localhost:8000${photoResponse.data.photo_url}`;
-        console.log('Full photo URL:', photoUrl);
-        
-        // Mettre à jour l'URL de la photo
-        setPhotoPreview(photoUrl);
-        updateUserProfile({
-          ...user,
-          prenom: prenom.trim(),
-          nom: nom.trim(),
-          photo: photoResponse.data.photo_url
-        });
-      } else {
-        // Mise à jour sans photo
-        updateUserProfile({
-          ...user,
-          prenom: prenom.trim(),
-          nom: nom.trim()
-        });
-      }
-      
-      setMessage({ text: 'Profil mis à jour avec succès !', type: 'success' });
+      const photoUrl = `http://localhost:8000${response.data.photo_url}`;
+      setPhotoPreview(photoUrl);
+      setMessage({ text: 'Profile photo updated successfully!', type: 'success' });
       setPhotoFile(null);
     } catch (error) {
-      console.error('Update error:', error);
-      if (error.response?.data) {
-        console.error('Error details:', {
-          data: error.response.data,
-          status: error.response.status,
-          headers: error.response.headers,
-          errors: error.response.data.errors
-        });
-      }
-      
-      const errorMessage = 
-        error.response?.data?.message ||
-        error.response?.data?.errors?.prenom?.[0] ||
-        error.response?.data?.errors?.nom?.[0] ||
-        error.response?.data?.errors?.photo?.[0] ||
-        'Échec de la mise à jour du profil';
-      
-      console.error('Error message:', errorMessage);
-      
+      console.error('Photo upload error:', error);
       setMessage({ 
-        text: errorMessage,
+        text: error.response?.data?.message || 
+              error.response?.data?.errors?.photo?.[0] || 
+              'Failed to update profile photo',
         type: 'error' 
       });
       
@@ -378,7 +303,8 @@ console.log(user);
                       id="prenom"
                       value={prenom}
                       onChange={handlePrenomChange}
-                      className="mt-1 block w-full border border-gray-300 dark:border-gray-700 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white sm:text-sm"
+                      disabled
+                      className="mt-1 block w-full border border-gray-300 dark:border-gray-700 rounded-md shadow-sm py-2 px-3 bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-300 cursor-not-allowed sm:text-sm"
                     />
                   </div>
 
@@ -391,7 +317,8 @@ console.log(user);
                       id="nom"
                       value={nom}
                       onChange={handleNomChange}
-                      className="mt-1 block w-full border border-gray-300 dark:border-gray-700 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white sm:text-sm"
+                      disabled
+                      className="mt-1 block w-full border border-gray-300 dark:border-gray-700 rounded-md shadow-sm py-2 px-3 bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-300 cursor-not-allowed sm:text-sm"
                     />
                   </div>
                   
@@ -406,7 +333,7 @@ console.log(user);
                       disabled
                       className="mt-1 block w-full border border-gray-300 dark:border-gray-700 rounded-md shadow-sm py-2 px-3 bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-300 cursor-not-allowed sm:text-sm"
                     />
-                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Matricule ne peut pas être modifié</p>
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Matricule et Nom peut pas être modifié</p>
                   </div>
                   
                   <div className="pt-5">

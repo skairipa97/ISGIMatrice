@@ -26,6 +26,9 @@ const handleSubmit = async (e) => {
   setLoading(true);
 
   try {
+    // Remove token validation
+    const email = searchParams.get('email');
+
     const response = await axios.post('http://localhost:8000/api/reset-password', {
       token,
       email: decodeURIComponent(email),
