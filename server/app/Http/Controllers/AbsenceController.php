@@ -9,6 +9,7 @@ use App\Models\Affectation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class AbsenceController extends Controller
 {
@@ -84,6 +85,26 @@ class AbsenceController extends Controller
                 ->get();
             $totalHours = $absences->sum(function($a) { return $a->seance ? $a->seance->duree : 0; });
             $seances = $absences->map(function($a) { return $a->seance; })->filter()->values();
+
+            // Send email if stagiaire has an email address
+            if ($stagiaire && !empty($stagiaire->email)) {
+                try {
+                    Mail::send('emails.comite-discipline', [
+                        'stagiaire' => $stagiaire,
+                        'totalHours' => $totalHours
+                    ], function ($message) use ($stagiaire) {
+                        $message->to($stagiaire->email)
+                                ->subject('Convocation au Comité de Discipline');
+                    });
+                } catch (\Exception $e) {
+                    \Log::error('Erreur lors de l\'envoi de l\'email de convocation au comité de discipline', [
+                        'stagiaire' => $stagiaire->matricule,
+                        'email' => $stagiaire->email,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+
             $result[] = [
                 'stagiaire' => $stagiaire,
                 'totalHours' => $totalHours,

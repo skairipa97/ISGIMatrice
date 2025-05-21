@@ -146,6 +146,16 @@ function AbsencesJustification({ user , onLogout }) {
   const justifiedAbsences = absences.filter(abs => abs.is_justified);
   const unjustifiedAbsences = absences.filter(abs => !abs.is_justified);
   
+  // Helper to check if absence is older than 48h
+  const isAbsenceOlderThan48h = (absence) => {
+    if (!absence.date) return false;
+    const absenceDate = new Date(absence.date);
+    const now = new Date();
+    const diffMs = now - absenceDate;
+    const diffHours = diffMs / (1000 * 60 * 60);
+    return diffHours > 48;
+  };
+
   if (loading) {
     return (
       <div className="h-screen w-screen flex items-center justify-center bg-white dark:bg-gray-900">
@@ -156,6 +166,9 @@ function AbsencesJustification({ user , onLogout }) {
       </div>
     );
   }
+  console.log(absences);
+  console.log(justifiedAbsences);
+  console.log(unjustifiedAbsences);
   return (
     <DashboardLayout user={user} onLogout={onLogout}>
       <div className="max-w-6xl mx-auto p-4 space-y-8">
@@ -191,11 +204,13 @@ function AbsencesJustification({ user , onLogout }) {
                         <span className="text-lg font-semibold text-red-700 dark:text-red-400">{new Date(abs.date).toLocaleDateString()}</span>
                       </div>
                       <div className="mt-2 text-red-600 dark:text-red-300">{abs.module_libelle}</div>
-                      <div className="mt-1 text-sm text-red-600 dark:text-red-300">Session: {abs.session}</div>
+                      <div className="mt-1 text-sm text-red-600 dark:text-red-300">Durée: {abs.duree}h</div>
                     </div>
                     <Button 
                       onClick={() => handleJustifyClick(abs)}
-                      className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors duration-200"
+                      className={`px-4 py-2 rounded-lg transition-colors duration-200 ${isAbsenceOlderThan48h(abs) ? 'bg-gray-400 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700 text-white'}`}
+                      disabled={isAbsenceOlderThan48h(abs)}
+                      title={isAbsenceOlderThan48h(abs) ? "Le délai de justification (48h) est dépassé." : "Justifier cette absence"}
                     >
                       Justifier
                     </Button>
@@ -283,7 +298,7 @@ function AbsencesJustification({ user , onLogout }) {
                           {abs.module_libelle}
                         </div>
                         <div className="mt-1 text-sm text-green-600 dark:text-green-300">
-                          Session: {abs.session}
+                          Durée: {abs.duree}h
                         </div>
                         <div className="mt-2 text-sm text-green-600 dark:text-green-300">
                           Raison: {abs.justification?.raison}

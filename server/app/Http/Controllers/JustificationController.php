@@ -8,6 +8,8 @@ use App\Models\Stagiaire;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Carbon;
 
 class JustificationController extends Controller
 {
@@ -40,39 +42,51 @@ class JustificationController extends Controller
     }
 
     public function store(Request $request)
-{
-    \Log::info('Requête de justification reçue:', $request->all());
-    \Log::info('Fichier reçu:', ['file' => $request->file('preuve') ? $request->file('preuve')->getClientOriginalName() : 'aucun fichier']);
+    {
+        \Log::info('Requête de justification reçue:', $request->all());
+        \Log::info('Fichier reçu:', ['file' => $request->file('preuve') ? $request->file('preuve')->getClientOriginalName() : 'aucun fichier']);
 
-    $request->validate([
-        'absence_id' => 'required|exists:absences,id',
-        'stagiaire_matricule' => 'required|exists:stagiaires,matricule',
-        'raison' => 'required|string|max:255',
-        'preuve' => 'required|file|max:2048'
-    ]);
+        $request->validate([
+            'absence_id' => 'required|exists:absences,id',
+            'stagiaire_matricule' => 'required|exists:stagiaires,matricule',
+            'raison' => 'required|string|max:255',
+            'preuve' => 'required|file|max:2048'
+        ]);
 
-    // Check if justification already exists
-    $existing = Justification::where('absence_id', $request->absence_id)->first();
-    if ($existing) {
-        \Log::warning('Tentative de double justification pour absence_id: ' . $request->absence_id);
-        return response()->json(['error' => 'Cette absence a déjà été justifiée'], 400);
+        $absence = Absence::with('seance')->findOrFail($request->absence_id);
+        $stagiaire = Stagiaire::where('matricule', $request->stagiaire_matricule)->first();
+        $absenceDate = $absence->seance->date ?? null;
+        if ($absenceDate) {
+            $absenceDateTime = Carbon::parse($absenceDate);
+            $now = Carbon::now();
+            $diffHours = $absenceDateTime->diffInHours($now, false);
+            if ($diffHours > 48) {
+                return response()->json(['error' => 'Le délai de justification (48h) est dépassé.'], 403);
+            }
+        }
+
+        // Check if justification already exists
+        $existing = Justification::where('absence_id', $request->absence_id)->first();
+        if ($existing) {
+            \Log::warning('Tentative de double justification pour absence_id: ' . $request->absence_id);
+            return response()->json(['error' => 'Cette absence a déjà été justifiée'], 400);
+        }
+
+        // Store the file
+        $path = $request->file('preuve')->store('justifications', 'public');
+        \Log::info('Fichier stocké à:', ['path' => $path]);
+
+        $justification = Justification::create([
+            'absence_id' => $request->absence_id,
+            'stagiaire_matricule' => $request->stagiaire_matricule,
+            'raison' => $request->raison,
+            'preuve_path' => $path
+        ]);
+
+        \Log::info('Justification créée:', $justification->toArray());
+
+        return response()->json($justification, 201);
     }
-
-    // Store the file
-    $path = $request->file('preuve')->store('justifications', 'public');
-    \Log::info('Fichier stocké à:', ['path' => $path]);
-
-    $justification = Justification::create([
-        'absence_id' => $request->absence_id,
-        'stagiaire_matricule' => $request->stagiaire_matricule,
-        'raison' => $request->raison,
-        'preuve_path' => $path
-    ]);
-
-    \Log::info('Justification créée:', $justification->toArray());
-
-    return response()->json($justification, 201);
-}
 
     // Récupère toutes les justifications en attente
     public function pending()
@@ -108,58 +122,99 @@ class JustificationController extends Controller
 
     // Met à jour le statut d'une justification
     public function updateStatus(Request $request, $id)
-{
-    $request->validate([
-        'status' => 'required|in:accepted,rejected'
-    ]);
+    {
+        $request->validate([
+            'status' => 'required|in:accepted,rejected'
+        ]);
 
-    try {
-        return DB::transaction(function () use ($request, $id) {
-            $justification = Justification::with(['absence.seance', 'absence.stagiaire'])
-                ->findOrFail($id);
+        try {
+            return DB::transaction(function () use ($request, $id) {
+                $justification = Justification::with(['absence.seance', 'absence.stagiaire'])
+                    ->findOrFail($id);
 
-            if ($request->status === 'accepted') {
-                $justification->validation = true;
-                $justification->save();
+                if ($request->status === 'accepted') {
+                    $justification->validation = true;
+                    $justification->save();
 
-                $absence = $justification->absence;
-                
+                    $absence = $justification->absence;
+                    
 
-                if ($absence->seance && $absence->stagiaire) {
-                    $duree = $absence->seance->duree ?? 0;
-                    $increment = 0;
+                    if ($absence->seance && $absence->stagiaire) {
+                        $duree = $absence->seance->duree ?? 0;
+                        $increment = 0;
 
-                    if ($duree == 5) {
-                        $increment = 0.5;
-                    } elseif ($duree == 2.5) {
-                        $increment = 0.25;
+                        if ($duree == 5) {
+                            $increment = 0.5;
+                        } elseif ($duree == 2.5) {
+                            $increment = 0.25;
+                        }
+
+                        if ($increment > 0) {
+                            $absence->stagiaire->increment('note_de_discipline', $increment);
+                        }
                     }
 
-                    if ($increment > 0) {
-                        $absence->stagiaire->increment('note_de_discipline', $increment);
-                    }
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Justification acceptée avec succès',
+                        'note_increment' => $increment ?? 0
+                    ]);
+                } else {
+                    $justification->validation = false;
+                    $justification->save();
+
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Justification refusée'
+                    ]);
                 }
-
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Justification acceptée avec succès',
-                    'note_increment' => $increment ?? 0
-                ]);
-            } else {
-                $justification->validation = false;
-                $justification->save();
-
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Justification refusée'
-                ]);
-            }
-        });
-    } catch (\Exception $e) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Erreur lors du traitement: ' . $e->getMessage()
-        ], 500);
+            });
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors du traitement: ' . $e->getMessage()
+            ], 500);
+        }
     }
-}
+
+    // Add a new method to notify stagiaire if almost 48h
+    public function notifyAlmost48h()
+    {
+        $absences = Absence::with(['seance', 'stagiaire'])
+            ->whereDoesntHave('justification')
+            ->get();
+        $now = Carbon::now();
+        foreach ($absences as $absence) {
+            if (!$absence->seance || !$absence->stagiaire || empty($absence->stagiaire->email)) continue;
+            $absenceDate = Carbon::parse($absence->seance->date);
+            $diffHours = $absenceDate->diffInHours($now, false);
+            \Log::debug('Processing absence', [
+                'absence_id' => $absence->id,
+                'diffHours' => $diffHours,
+                'email' => $absence->stagiaire->email ?? null
+            ]);
+            if ($diffHours >= 10 && $diffHours <= 48) {
+                // Send notification email
+                try {
+                    Mail::send('emails.absence-justification-reminder', [
+                        'stagiaire' => $absence->stagiaire,
+                        'absence' => $absence,
+                        'hours_left' => 48 - $diffHours
+                    ], function ($message) use ($absence) {
+                        $message->to($absence->stagiaire->email)
+                                ->subject('Rappel : Justification d\'absence bientôt expirée');
+                        $message->from('noreply@example.com', 'Gestion des absences');
+                    });
+
+                } catch (\Exception $e) {
+                    \Log::error('Erreur lors de l\'envoi du rappel de justification', [
+                        'stagiaire' => $absence->stagiaire->matricule,
+                        'email' => $absence->stagiaire->email,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+        }
+        return response()->json(['message' => 'Notifications envoyées']);
+    }
 }
