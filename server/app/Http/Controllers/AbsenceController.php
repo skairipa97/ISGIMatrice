@@ -275,5 +275,38 @@ public function adminAbsences(Request $request)
         ]
     ]);
 }
+public function byGroup()
+{
+    // Example: group absences by group name and date
+    $data = \App\Models\Absence::with('stagiaire.groupe', 'seance')
+        ->get()
+        ->groupBy(function($absence) {
+            return optional($absence->stagiaire->groupe)->libelle ?? 'Groupe inconnu';
+        })
+        ->map(function($groupAbsences, $groupName) {
+            return $groupAbsences->groupBy(function($absence) {
+                return optional($absence->seance)->date ?? 'Date inconnue';
+            })->map(function($absences, $date) {
+                return $absences->count();
+            });
+        });
+
+    // Transform to array suitable for chart
+    $dates = [];
+    foreach ($data as $group => $groupData) {
+        foreach ($groupData as $date => $count) {
+            $dates[$date][$group] = $count;
+        }
+    }
+    $result = [];
+    foreach ($dates as $date => $groups) {
+        $row = ['date' => $date];
+        foreach ($groups as $group => $count) {
+            $row[$group] = $count;
+        }
+        $result[] = $row;
+    }
+    return response()->json($result);
+}
 
 }

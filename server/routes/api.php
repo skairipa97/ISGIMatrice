@@ -57,6 +57,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Absences
     Route::get('/absences', [AbsenceController::class, 'index']);
     Route::get('/absences/critical', [AbsenceController::class, 'critical']);
+    Route::get('/absences/by-group', [\App\Http\Controllers\AbsenceController::class, 'byGroup']);
 
      // Justification routes
      Route::get('/justifications', [JustificationController::class, 'index']);

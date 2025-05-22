@@ -5,6 +5,7 @@ import { Card, CardHeader, CardContent, CardTitle, CardDescription } from '../..
 import Avatar from '../../components/ui/Avatar';
 import Badge from '../../components/ui/Badge';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { data } from 'react-router-dom';
 
 const AdminDashboard = ({ user, onLogout }) => {
   const [userData, setUserData] = useState(user);
@@ -68,6 +69,7 @@ const AdminDashboard = ({ user, onLogout }) => {
           );
           
           if (absencesByGroupResponse.data && Array.isArray(absencesByGroupResponse.data)) {
+            console.log('API /api/absences/by-group response:', absencesByGroupResponse.data);
             setAbsencesByGroupData(absencesByGroupResponse.data);
           }
         } catch (groupAbsencesError) {
@@ -83,6 +85,8 @@ const AdminDashboard = ({ user, onLogout }) => {
         });
         
         setLoading(false);
+        console.log(absencesByGroupData)
+     
       } catch (err) {
         console.error('Fetch error:', err);
         
@@ -129,7 +133,11 @@ const AdminDashboard = ({ user, onLogout }) => {
     if (chartData.length === 0) return null;
     
     // Get all group names from the first data item
-    const groupNames = Object.keys(chartData[0]).filter(key => key !== 'date');
+    const groupNames = Array.from(
+      new Set(
+        chartData.flatMap(row => Object.keys(row).filter(key => key !== 'date'))
+      )
+    );
     
     // Array of colors for different lines
     const colors = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#0088FE', '#00C49F'];

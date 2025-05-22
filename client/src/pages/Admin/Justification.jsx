@@ -30,7 +30,13 @@ const Dialog = ({ open, onOpenChange, children }) => {
   
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-6 mx-4 shadow-xl">
+      <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full p-6 mx-4 shadow-xl relative">
+        <button 
+          onClick={() => onOpenChange(false)}
+          className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 text-2xl font-bold"
+        >
+          ×
+        </button>
         {children}
       </div>
     </div>
@@ -63,6 +69,7 @@ export default function AdminJustifications({ user, onLogout }) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showProof, setShowProof] = useState(false);
 
   // Récupérer les justifications en attente
   useEffect(() => {
@@ -106,16 +113,12 @@ export default function AdminJustifications({ user, onLogout }) {
   const handleViewDetails = (justification) => {
     setSelectedJustification(justification);
     setIsDialogOpen(true);
+    setShowProof(false);
   };
 
   const handleStatusChange = async (id, status) => {
     try {
       const token = localStorage.getItem('token');
-      console.log('Sending request with:', {
-        method: 'PUT',
-        url: `http://localhost:8000/api/justifications/${id}/status`,
-        body: JSON.stringify({ status })
-      });
       
       const response = await fetch(`http://localhost:8000/api/justifications/${id}/status`, {
         method: 'PUT',
@@ -125,21 +128,12 @@ export default function AdminJustifications({ user, onLogout }) {
         },
         body: JSON.stringify({ status })
       });
-      
-      console.log('Received response:', {
-        status: response.status,
-        ok: response.ok,
-        body: await response.clone().text() // Clone to read body multiple times
-      });
   
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || 'Échec de la mise à jour');
       }
   
-      const data = await response.json();
-      console.log(data.message); // Log success message
-      
       // Update local state by removing the processed justification
       setJustifications(prev => prev.filter(j => j.id !== id));
       setIsDialogOpen(false);
@@ -244,20 +238,15 @@ export default function AdminJustifications({ user, onLogout }) {
               <div className="space-y-4">
                 <div className="flex items-center space-x-4">
                   <Avatar className="h-16 w-16">
-                    {selectedJustification.stagiaire?.avatar ? (
-                      <AvatarImage 
-                        src={selectedJustification.student.avatar} 
-                        alt={selectedJustification.student?.name || 'Student'} 
-                      />
-                    ) : (
+                    
                       <AvatarFallback>
                         {selectedJustification.student?.name?.charAt(0) || 'S'}
                       </AvatarFallback>
-                    )}
+                  
                   </Avatar>
                   <div>
-                    <h3 className="text-lg font-semibold dark:text-white">{selectedJustification.student.name}</h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-300">{selectedJustification.student.groupe}</p>
+                    <h3 className="text-lg font-semibold dark:text-white">{selectedJustification.student?.name}</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">{selectedJustification.student?.groupe}</p>
                   </div>
                 </div>
 
@@ -282,11 +271,29 @@ export default function AdminJustifications({ user, onLogout }) {
                 {selectedJustification.proof && (
                   <div>
                     <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Preuve</p>
-                    <img 
-                      src={selectedJustification.proof} 
-                      alt="Preuve de justification" 
-                      className="mt-2 max-h-40 rounded-md object-cover border dark:border-gray-600"
-                    />
+                    <Button
+                      className="mt-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 text-sm rounded"
+                      onClick={() => setShowProof(!showProof)}
+                    >
+                      {showProof ? 'Masquer preuve' : 'Voir preuve'}
+                    </Button>
+                    {showProof && (
+                      <div className="mt-4 relative">
+                        <img 
+                          src={selectedJustification.proof} 
+                          alt="Preuve de justification" 
+                          className="w-full rounded-md object-contain border dark:border-gray-600 max-h-64"
+                        />
+                        <a 
+                          href={selectedJustification.proof} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="absolute bottom-2 right-2 bg-black/50 text-white px-2 py-1 rounded text-sm hover:bg-black/70"
+                        >
+                          Ouvrir en plein écran
+                        </a>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
